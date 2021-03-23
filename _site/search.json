@@ -5,8 +5,8 @@
       "title": "Hayley Hadges",
       "description": "A Data Science Portfolio\n",
       "author": [],
-      "contents": "\r\n\r\nEducation\r\nMacalester College\r\nBachelor of Arts\r\nMajor in Applied Mathematics and Statistics Minor in Computer Science\r\nGraduating in May 2022\r\nRelevent Coursework\r\nIntroduction to Data Science\r\nAdvanced Data Science in R\r\nProbability\r\nStatistical Machine Learning\r\nIntroduction to Database Management Systems\r\nIntro to Data Storytelling\r\nDB0201EN: SQL for Data Science (IBM)\r\nLearning Power BI Desktop\r\nExperience\r\nContact\r\nEmail: hayleymhadges@gmail.com\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-03-19T14:08:19-05:00"
+      "contents": "\r\n\r\nEducation\r\nMacalester College\r\nBachelor of Arts\r\nMajor in Applied Mathematics and Statistics\r\nMinor in Computer Science\r\nGraduating in May 2022\r\nRelevent Coursework\r\nIntroduction to Data Science\r\nAdvanced Data Science in R\r\nProbability\r\nStatistical Machine Learning\r\nIntroduction to Database Management Systems\r\nIntro to Data Storytelling\r\nDB0201EN: SQL for Data Science (IBM)\r\nLearning Power BI Desktop\r\nContact\r\nEmail: hayleymhadges@gmail.com\r\n\r\n\r\n\r\n",
+      "last_modified": "2021-03-19T15:03:23-05:00"
     },
     {
       "path": "project.html",
@@ -14,7 +14,7 @@
       "description": "Advanced Data Science in R Final Project\n",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-03-19T14:08:21-05:00"
+      "last_modified": "2021-03-19T15:03:25-05:00"
     }
   ],
   "collections": []

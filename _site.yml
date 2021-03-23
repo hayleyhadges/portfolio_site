@@ -15,3 +15,4 @@ navbar:
       href: https://www.linkedin.com/in/hayley-h-51a524107/
   
 output: distill::distill_article
+theme: "hayley_theme.css"

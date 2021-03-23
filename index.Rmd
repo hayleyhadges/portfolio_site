@@ -17,11 +17,12 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Education
 
-Macalester College
+**Macalester College**
 
 Bachelor of Arts
 
 Major in Applied Mathematics and Statistics
+
 Minor in Computer Science
 
 Graduating in May 2022
@@ -36,8 +37,6 @@ Graduating in May 2022
 * Intro to Data Storytelling
 * DB0201EN: SQL for Data Science (IBM)
 * Learning Power BI Desktop
-
-## Experience
 
 
 ## Contact
