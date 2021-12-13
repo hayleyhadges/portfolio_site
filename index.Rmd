@@ -29,12 +29,13 @@ Graduating in May 2022
 
 ## Relevent Coursework
 
-* Introduction to Data Science
 * Advanced Data Science in R
 * Probability
 * Statistical Machine Learning
 * Introduction to Database Management Systems
 * Intro to Data Storytelling
+* Survival Analysis
+* Bayesian Statistics
 * DB0201EN: SQL for Data Science (IBM)
 * Learning Power BI Desktop
 

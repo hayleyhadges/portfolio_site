@@ -1,5 +1,5 @@
 ---
-title: "Final Project"
+title: "MN Computer Science K-12 Availability Analysis"
 description: |
  Advanced Data Science in R Final Project
 site: distill::distill_website
@@ -12,3 +12,75 @@ knitr::opts_chunk$set(echo = FALSE)
 # https://rstudio.github.io/distill/website.html
 
 ```
+
+For the final project in the Advanced Data Science in R course, my group performed an exploratory analysis of the availability of K-12 computer science courses in Minnesota's school districts. 
+
+# Project Overview
+
+We utilized interactive plotly maps to illustrate total CS course offerings and offering types, compared variables of interest such as population, median household income, and per pupil spending, and dove deeper into two Minnesota school districts that differed drastically in computer science course availability to see how they varied in demographics. We also created a lasso and random forest model to predict the amount of computer science courses per district in the state of Minnesota. Lastly, we considered the implications of our analysis, including the nuances to the issue of course availability and inequality that we could not address within the scope of our project. 
+
+
+*The following is an excerpt from our project's website, which more formally introduces the topic, as well as one of the interactive maps.*
+
+### Introduction
+Computer science is a field that is growing rapidly in the United States and around the world today. Industry is constantly releasing advancements in computer science and technology is becoming more ingrained into our daily lives with each passing day. Therefore, with an increase in technology usage, the demand for computer scientists has increased in popularity. Due to this fast-growing field, educational institutions and systems are increasing the amount of computer science courses offered in order to train more future computer scientists.
+
+These increases started at the college level, where majoring in computer science is now becoming a widely available option. At Macalester College, it is one of the largest departments for both students and faculty. While the availability of courses at the college level is a good start, there is a big push to have computer science courses offered in K-12 education. Offering computer science courses in elementary and secondary schools provides an opportunity for kids to expose themselves to coding, potentially leading to younger students discovering new interests and actively engaging with computer science earlier. Oftentimes, being exposed to computer science at a younger age can make students more comfortable with the material and the field later on, which can contribute to a more empowered and diverse set of students entering the workforce or higher education. Given the importance of having computer science courses available in K-12 education, we decided to investigate the availability of computer science courses in K-12 school districts in Minnesota. In this project, we explore the connection between a variety of data sets related to this topic, including K-12 computer science course availability in Minnesota, demographic information from the U.S. census, ACT scores, and school district financial information.
+
+```{r}
+library(tidyverse)
+library(sf)
+library(plotly)
+library(gridExtra)
+library(naniar)
+library(DALEX)
+library(DALEXtra)
+```
+
+```{r}
+##### RUN THIS CHUNK WHENEVER YOU READ IN THE DATA
+mn_acs_ss_act_pred <- st_read("mn_acs_ss_act_pred/mn_acs_ss_act_pred.shp",
+                geometry_column = "geometry",
+                fid_column_name = "geometry",
+                quiet = TRUE)
+# rename the census variables because their names were reformatted...
+names(mn_acs_ss_act_pred)[1:28] <- 
+  c("GEOID", "District", "District.Nbr", "male_5to9", "male_10to14", "male_15to17",
+    "total_pop", "race_white_only", "race_Black_only", "race_Asian_only",
+    "race_pacific_islander_only", "at_least_two_races", "SSI_pubassist_foodstamps",
+    "med_household_inc_12mo", "house_units_w_mortgage", "med_gross_rent",
+    "internet_subscrip_in_house", "perc_male_5to9", "perc_male_10to14",
+    "perc_male_15to17", "perc_white_only", "perc_black_only", "perc_asian_only",
+    "perc_pacific_islander_only", "perc_at_least_two_races", "perc_SSI_pubassist_foodstamps",
+    "perc_house_units_w_mortgage", "perc_internet_subscription")
+names(mn_acs_ss_act_pred)[93] <- c("TotalClasses")
+```
+
+```{r}
+mn_acs_ss_act_pred_viz <- 
+  mn_acs_ss_act_pred %>%  drop_na()
+
+ggplotly(
+  ggplot(mn_acs_ss_act_pred_viz) +
+  geom_sf(aes(fill = TotalClasses, text = paste(District)),  size = .1, color = "white") +
+  scale_fill_viridis_c(option = "B") +
+  labs(title = "Total CS Courses Offered", fill = "") +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.background = element_rect(fill = "white"),
+        plot.title = element_text(hjust = 0.5),
+        title =element_text(size=12, face='bold'))
+) 
+```
+
+
+## MN Computer Science K-12 Availability Analysis Site
+
+The official project website can be found [here](https://advanced-data-science-final-project.netlify.app/).
+
+For more information about how we created this project, please visit:
+
+[GitHub Repo](https://github.com/anaelkuperwajs/STAT494-Final-Project)
+
+[Behind the scenes](https://github.com/anaelkuperwajs/STAT494-Final-Project/blob/main/behind_the_scenes.Rmd)
+
