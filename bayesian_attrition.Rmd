@@ -15,23 +15,6 @@ knitr::opts_chunk$set(warning = FALSE,
                       fig.pos = "center")
 ```
 
-```{css, echo=FALSE}
-#Change text size and alignment for headers
-
-h1, h2, h3 {
-      text-align: center;
-}
-h1 {
-  font-size: 56px;
-}
-h2 {
-  font-size: 48px;
-}
-h3 {
-  font-size: 36px;
-}
-```
-
 ```{r, echo = FALSE}
 #Import packages
 
