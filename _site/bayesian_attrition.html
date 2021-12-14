@@ -2344,6 +2344,8 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   }</style>
   <!--/radix_placeholder_distill-->
   <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+  <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+  <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
   <script src="site_libs/popper-2.6.0/popper.min.js"></script>
   <link href="site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
   <link href="site_libs/tippy-6.2.7/tippy-light-border.css" rel="stylesheet" />
@@ -2407,14 +2409,783 @@ Projects
 
 
 <div class="d-article">
-<p>For the final project in the Bayesian Statistics course, I used Bayesian modeling techniques with the <code>stanarm</code> package to predict employee attrition.</p>
-<h1 id="project-overview">Project Overview</h1>
-<p>Going into the project, we established multiple hypotheses to be tested and used these to determine what data to collect. To standardize the data collection, we discussed and agreed upon the variable criteria. Our main areas of interest included binary variables ‘promiscuity’, ‘drugs_alcohol’, and ‘fights_back’, as well as qualitative variables such as ‘gender’, ‘ethnicity’, and ‘year_released’, all of which became categorical data for our analysis. After collecting the data, we created Kaplan-Meier curves and a Cox PH and Weibull model for each variable of interest, using the p values, hazard ratios, and Kaplan-Meier curves to determine if we could reject the null hypotheses. We also performed multivariate analysis and created Cox Proportional Hazard tables to see how variables interacted with one another.</p>
-<p>We considered the limitations of our analysis, which stemmed from creating the dataset ourselves. We interpreted our variable analysis, putting our findings into the bigger picture, and summarized the main insights.</p>
-<p><em>The following is an excerpt from our project’s website, which delves deeper into our data collection decisions, as well as one of the Kaplan Meier curves.</em></p>
-<h3 id="data-collection">Data Collection</h3>
-<p>For a project like this, there was no dataset we could find to suit our needs, so we decided to create our own. First we had to determine how to define slashers in order to decide which movies to include in the dataset. We wanted to define slasher films based on the most prevalent, trope-like characteristics: a psychopathic killer stalks and graphically murders a group of adolescent victims. We did not include movies with supernatural killers such as ‘Final Destination’ or movies that focus or include only one victim, such as ‘Hush’. We started out with the most popular, well-known slasher films such as ‘Halloween’, ‘Scream’, and ‘Friday the 13th’, and went from there picking the most popular movies that fit our definition. In order to get a good spread of the sub-genre, we decided to pick five movies from each decade, starting in the 1970’s and ending in the 2010’s. We recorded each character death caused by the slasher, and included main characters who survived attacks by the slasher.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<style type="text/css">
+h1, h2, h3 {
+      text-align: center;
+}
+h1 {
+  font-size: 56px;
+}
+h2 {
+  font-size: 48px;
+}
+h3 {
+  font-size: 36px;
+}
+
+</style>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<h1 id="introduction"><strong>Introduction</strong></h1>
+<h2 id="the-business-problem">The Business Problem</h2>
+<p>As data has grown globally, so has its usage. For businesses, data analytics has become quite a powerful tool. Over the years, it has become more beneficial for businesses to become data-driven. Used to drive strategy, maximize efficiencies and sales, identify new opportunities, and much more–businesses can use data analytics to leverage insights to make wise business decisions.</p>
+<p>Developing strategies through data analysis might require descriptive, diagnostic, predictive, or prescriptive methods. The focus of this work will be on predictive modeling, specifically <strong>classification modeling</strong>. Classification modeling uses supervised learning methods to predict the class or category of new data. Countless business scenarios can use this type of data modeling, and every business could profit from utilizing them. A hotel could profit from predicting whether or not a booking will be canceled, a service company could profit from predicting whether or not a customer will cancel their subscription, and a marketing team could profit from predicting whether or not consumers will respond positively to their marketing campaigns.</p>
+<p>Although many business scenarios would benefit from classification modeling, <strong>for this work, I will focus on employee attrition</strong>. Businesses hire employees, fire employees, and lose them through other means. Attrition impacts all businesses, and there is a great motivation to understand the driving factors of employee attrition and minimize it. Just like businesses work to keep their customers from leaving their services, businesses also work to keep their employees from leaving the company. Losing employees represents a significant loss to the company– not only does it cause a disruption in the business, but it also costs time, money, and effort recruiting a replacement, hiring that replacement, and training them. While attrition cannot be completely eliminated, it can be cut off through an improved understanding of the workforce and targeted intervention. There would be multiple advantages from building a classification model that accurately predicts which employees are likely to quit. It could shed light on the relationships between employee characteristics and their likelihood of attrition, which would provide HR with a better understanding of their workforce and push them to implement widespread changes. Discovering employees with a higher likelihood of attrition would also provide HR the opportunity to step in and resolve any potential situations before these employees leave.</p>
+<p>Now that I have discussed the business scenario and the importance of building a classification model to predict employee attrition, I will describe my approach to building such models.</p>
+<h2 id="the-bayesian-approach">The Bayesian Approach</h2>
+<p>In this analysis, I will be using Bayesian statistics, an approach to data analysis that combines one’s prior knowledge with new evidence to inform the probability of an event or outcome. This method of statistical inference is based on Bayes’ Theorem, a mathematical formula that updates prior probabilities <em>(i.e., the belief about the likelihood of the event occurring)</em> based on new data <em>(i.e., the information that the new data provides about the likelihood of the event occurring)</em>. Instead of returning a single posterior probability, the theorem produces a full posterior distribution of the given parameter.</p>
+<p>If the prior knowledge is weak or unreliable, the data will be weighted more heavily when determining the posterior probability distribution. If the new data is unreliable or minimal, the prior knowledge will be more heavily weighted. <strong>In simple terms, Bayesian statistics depend on both the probability of the observed data and prior knowledge while finding a balance between the two.</strong></p>
+<h2 id="the-bayesian-models">The Bayesian Models</h2>
+<p>I will briefly go over the three Bayesian models I will build: logistic regression, LASSO logistic regression, and Naive Bayes. Naive Bayes and logistic regression are two popular models used for classification, whose algorithms are similar yet different in many ways. I will briefly go over their differences first and then describe how LASSO logistic regression differs from regular logistic regression.</p>
+<p><strong>Logistic Regression:</strong></p>
+<ul>
+<li><em>Discriminative model</em>: models the decision boundary between the classes</li>
+<li>Only used for binary response variables</li>
+<li>Can use coefficients to interpret relationships between variables</li>
+</ul>
+<p><strong>Naive Bayes:</strong></p>
+<ul>
+<li><em>Generative model</em>: models the actual distribution of each class</li>
+<li>Can be used for categorical response variables with two or more categories</li>
+<li>Cannot explore the relationship between variables</li>
+<li>Called naive for its naive assumption that all features are independent of each other, which is not always accurate</li>
+<li>Higher bias but lower variance</li>
+<li>Computationally efficient</li>
+</ul>
+<p><strong>LASSO Logistic Regression</strong> is similar to regular logistic regression, except it utilizes regularization through shrinkage priors. It imposes a constraint on the model parameters that causes the coefficients for some variables to shrink toward zero, keeping the more critical variables the same. This technique effectively increases the bias of the model in order to lower its variance. This method is excellent for feature selection when there is high dimensional data <em>(ie when there are many variables compared to the number of observations)</em> and can be useful for improving predictions.</p>
+<h2 id="the-motivation">The Motivation</h2>
+<p>I will build, interpret, and evaluate the posterior models in this work. For each model, I will walk through determining the model distribution, specifying priors, and setting up the posterior model. I will also show how to interpret these models, and then evaluate their accuracy all together at the end. Throughout the work, I will provide both the code and the results so that they may be replicated on this dataset or tweaked and used on another dataset.</p>
+<p>I hope this work can explain and illustrate the benefits of utilizing Bayesian statistics for business intelligence analytics. I would like to introduce analysts to Bayesian modeling techniques and encourage them to employ these techniques, using my code and output as a reference if helpful. While there is work that describes the purpose and math behind Bayesian modeling and techniques, and some that show model outputs, minimal work walks through each step while providing the actual code. In providing examples of how to construct Bayesian models, interpret them, and evaluate them while providing the code and the output, I hope analysts may replicate or further research the techniques for future usage.</p>
+<div style="page-break-after: always;"></div>
+<h1 id="the-data"><strong>The Data</strong></h1>
+<p>The dataset I will use for my analysis details roughly 1,500 employees of a fictitious company. The data includes employees who currently work for the company and employees who have left the company. It contains 30 additional variables for each employee, including gender, age, and if they work overtime. This data was created by IBM and can be downloaded from Kaggle <a href="https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset">here</a>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Import data, remove unused variables</span>
+<span class='va'>Emp_Attrition</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/utils/read.table.html'>read.csv</a></span><span class='op'>(</span><span class='st'>"attrition.csv"</span><span class='op'>)</span>
+
+<span class='va'>Emp_Attrition</span> <span class='op'>&lt;-</span>
+ <span class='va'>Emp_Attrition</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>mutate</span><span class='op'>(</span>Attrition <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/ifelse.html'>ifelse</a></span><span class='op'>(</span><span class='va'>Attrition</span><span class='op'>==</span><span class='st'>"Yes"</span>, <span class='fl'>1</span>, <span class='fl'>0</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>rename</span><span class='op'>(</span>Age <span class='op'>=</span> <span class='st'>"ï..Age"</span><span class='op'>)</span> <span class='op'>%&gt;%</span> 
+  <span class='fu'>select</span><span class='op'>(</span><span class='va'>Attrition</span>, <span class='va'>Age</span>, <span class='va'>EnvironmentSatisfaction</span>, <span class='va'>Gender</span>, <span class='va'>JobInvolvement</span>, <span class='va'>JobSatisfaction</span>, <span class='va'>StockOptionLevel</span>, <span class='va'>TrainingTimesLastYear</span>, <span class='va'>WorkLifeBalance</span>, <span class='va'>OverTime</span>, <span class='va'>NumCompaniesWorked</span>, <span class='va'>YearsInCurrentRole</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<h2 id="data-dictionary">Data Dictionary</h2>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Name
+</th>
+<th style="text-align:left;">
+Descrition
+</th>
+<th style="text-align:left;">
+Data Type
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<code>Attrition</code>
+</td>
+<td style="text-align:left;">
+Whether or not employee leaves company (0,1).
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>Age</code>
+</td>
+<td style="text-align:left;">
+Age of employee.
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>EnvironmentSatisfaction</code>
+</td>
+<td style="text-align:left;">
+0 - 4 rating of employee’s environment satisfaction (1 = ‘Low’, 2 = ‘Medium’, 3 = ‘High’, 4 = ‘Very High’).
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>Gender</code>
+</td>
+<td style="text-align:left;">
+Gender of employee (Female, Male).
+</td>
+<td style="text-align:left;">
+Character
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>JobInvolvement</code>
+</td>
+<td style="text-align:left;">
+0 - 4 rating of employee’s involvement (1 = ‘Low’, 2 = ‘Medium’, 3 = ‘High’, 4 = ‘Very High’).
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>JobSatisfaction</code>
+</td>
+<td style="text-align:left;">
+0 - 4 rating of employee’s job satisfaction (1 = ‘Low’, 2 = ‘Medium’, 3 = ‘High’, 4 = ‘Very High’).
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>StockOptionLevel</code>
+</td>
+<td style="text-align:left;">
+How much company stocks employee owns.
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>TrainingTimesLastYear</code>
+</td>
+<td style="text-align:left;">
+Number of training sessions employees received the previous year.
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>WorkLifeBalance</code>
+</td>
+<td style="text-align:left;">
+0 - 4 rating of employee work/life balance (1 = ‘Bad’, 2 = ‘Good’, 3 = ‘Better’, 4 = ‘Best’).
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>OverTime</code>
+</td>
+<td style="text-align:left;">
+Whether or not the employee works overtime (Yes, No).
+</td>
+<td style="text-align:left;">
+Character
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>NumCompaniesWorked</code>
+</td>
+<td style="text-align:left;">
+Number of companies employee has worked at previously.
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>YearsInCurrentRole</code>
+</td>
+<td style="text-align:left;">
+Number of years employee has worked their current role.
+</td>
+<td style="text-align:left;">
+Integer
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div style="page-break-after: always;"></div>
+<h1 id="logistic-regressionbuilding-the-model"><strong>Logistic Regression–Building the Model</strong></h1>
+<h2 id="specify-the-data-model">Specify the Data Model</h2>
+<p>We will start with our predicted variable, <code>Attrition</code>. Because this is a binary categorical response variable, we let <span class="math inline">\(Y_i\)</span> be the 0 or 1 indicator of whether or not any given employee i quits. <em>When importing the dataset, we mutated this variable to reflect this.</em></p>
+<p><span class="math display">\[Y = \begin{cases}
+ 1 &amp; \text{Employee Leaves Company} \\
+ 0 &amp; \text{Employee does not Leave Company} \\
+\end{cases}\]</span></p>
+<p>Since <span class="math inline">\(Y_i\)</span> is a discrete binary variable, the Bernoulli probability model is the most appropriate model structure for the response variable.</p>
+<p><span class="math display">\[Y_i|π_i∼Bern(π_i)\text{ where } π_i \text{ denotes the probability of attrition for employee i}.\]</span></p>
+<p>Now we must describe how the probability of attrition <span class="math inline">\(π_i\)</span> depends on our predictors, <span class="math inline">\((X_1, X_2, ... X_{11})\)</span> by writing the Bernoulli mean <span class="math inline">\(π_i\)</span> as a linear function of the predictors. We will assume that <span class="math inline">\(π_i\)</span> depends on our predictors through the logit link function <span class="math inline">\(g(π_i)=log(\frac{π_i}{1-π_i})\)</span>, which evaluates the log(odds of attrition) to be linearly related to our predictors.</p>
+<p><span class="math inline">\(Y_i|β_{0c},β_1,β_2,...β_{11} ind∼Bern(π_i) \text{ with } log (\frac{π_i}{1−π_i})=β_{0c}+β_1X_{1+}β_2X_{2}+...+β_{11}X_{11}\)</span></p>
+<h2 id="specify-the-priors">Specify the Priors</h2>
+<p>Alone, the model we specified previously is a simple logistic regression model. It does not take into account any prior knowledge we might have about the predictors or the predicted variable, and this is where the Bayesian techniques come into play. We can incorporate prior models for the logistic regression parameters <span class="math inline">\(β_{0c}, β_1 ... β_{11}\)</span> to go from a frequentist model to a Bayesian model. So just as <span class="math inline">\(π_i\)</span> is written as a linear function of <span class="math inline">\((X_1, X_2, ... X_{11})\)</span>, we can write each regression parameter as a linear function. <strong>To simplify the model and stay consistent with the <code>rstanarm</code> framework we will use, we will make the assumption that all prior models of these regression parameters are independent of each other.</strong></p>
+<p>To determine the structure of these priors, we must consider what values these parameters could take. The intercept and slope regression parameters can take any values in the real line, meaning the model line can cross anywhere on the y-axis, and the slope of the line can be any value: positive, negative, or 0. To this end, we will specify these prior models as Normal, since Normal models can also take any values on the real line.</p>
+<p>I will write out a couple of these prior models as examples: <span class="math display">\[β_{0c}\text{ ~ }N(m_0, s_0^2)\]</span> <span class="math display">\[β_{1}\text{ ~ } N(m_1, s_1^2)\]</span></p>
+<p><span class="math display">\[β_{11}\text{ ~ } N(m_{11}, s_{11}^2)\]</span></p>
+<p>Next, we will tune our prior models for the parameter coefficients <span class="math inline">\((β_{0c},β_1...β_{11})\)</span>.</p>
+<p>I will manually calculate the hyperparameters <span class="math inline">\((m_0, s_0)\)</span> of the centered intercept <span class="math inline">\(β_{0c}\)</span>. We use the centered intercept in place of the model baseline <span class="math inline">\(β_0\)</span> because it is more intuitive. The centered intercept reflects the typical attrition at the typical values for each predictor, whereas the model baseline would reflect the attrition when all predictors are at 0 or at what the model assumes is the baseline. It is this centered intercept we will calculate that we will use to simulate our logistic regression model.</p>
+<p>Onto the calculation: from our data, we can calculate that 16% of all the employees have left the company. We have a prior understanding that there’s a roughly 16% chance that the average employee will leave the company, so <span class="math inline">\(π ≈ 0.16\)</span>.</p>
+<p>We can calculate the prior mean for <span class="math inline">\(β_{0c}\)</span> on the log(odds) scale: <span class="math display">\[log(\frac{.16}{1-.16}) = -1.66\]</span> We have a vague understanding that the log(odds of attrition) might range from roughly -3.32 to 0 (−1.66±2∗0.83). Since this is not very meaningful, we can transform this to find the odds and probability of attrition for an average employee.</p>
+<p><span class="math display">\[\text{odds: } (e^{-3.32}, e^0) = (0.036, 1)\]</span> <span class="math display">\[\text{probability: } (\frac{.036}{1+.036}, \frac{1}{1+1}) = (.035,0.5)\]</span> From this we can determine:</p>
+<ul>
+<li>the odds of attrition for an average employee could be somewhere between 0.036 and 1.</li>
+<li>the probability of attrition for an average employee could be somewhere between 0.035 and 0.5.</li>
+</ul>
+<p>There is quite a bit of variance in our prior understanding of the probability of the average employee quitting. This large variance means our prior understanding is not very informative, so <strong>we can call this a weak prior</strong>.</p>
+<p>Now that we have manually calculated the centered intercept, we will utilize the default framework of the prior models used by the <code>rstanarm</code> package to tune the rest of the hyperparameters to match our prior understanding of our model parameters <span class="math inline">\((β_{0c},β_1...β_{11})\)</span>. To do this, we will use the Markov chain Monte Carlo (MCMC) simulation techniques from the <code>rstan</code> package. Markov chains essentially mimic a random sample that eventually converges to the posterior. Each iterative sample depends on the previous sample; the samples are not independent and are not taken directly from the posterior pdf.</p>
+<p>We will use <code>stan_glm()</code> to simulate 20,000 sets of parameters <span class="math inline">\((β_{0c},β_1...β_{11})\)</span> from the prior models using MCMC, allowing us to specify our weakly informative priors. By setting <code>prior_PD</code> to <code>TRUE</code>, we simulate the prior model <em>(we change this to <code>FALSE</code> to simulate the posterior model)</em>. We set the <code>family</code> to <code>binomial</code> to show that our logistic regression model has a data structure specified by a Bernoulli model. We can use the prior centered mean for <span class="math inline">\(β_{0c}\)</span> that we calculated on the log(odds) scale to set the <code>prior_intercept</code> with a standard deviation of half its magnitude. Since we are unsure about our prior parameters, we set <code>autoscale</code> to <code>TRUE</code>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Simulate prior models</span>
+<span class='va'>attrition_logistic_model_priors</span> <span class='op'>&lt;-</span> <span class='fu'>stan_glm</span><span class='op'>(</span>
+  <span class='va'>Attrition</span> <span class='op'>~</span><span class='va'>.</span>,
+  prior_intercept <span class='op'>=</span> <span class='fu'>normal</span><span class='op'>(</span><span class='op'>-</span><span class='fl'>1.66</span>, <span class='fl'>.8</span><span class='op'>)</span>,
+  prior <span class='op'>=</span> <span class='fu'>normal</span><span class='op'>(</span><span class='fl'>0</span>, <span class='fl'>2.5</span>, autoscale <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>, 
+  data <span class='op'>=</span> <span class='va'>Emp_Attrition</span>,
+  family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span><span class='op'>(</span><span class='op'>)</span>,
+  prior_PD <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  chains <span class='op'>=</span> <span class='fl'>4</span>, iter <span class='op'>=</span> <span class='fl'>5000</span><span class='op'>*</span><span class='fl'>2</span>, seed <span class='op'>=</span> <span class='fl'>84735</span>, refresh <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>Next we’ll use <code>prior_summary()</code> to find the adjusted prior parameters from the simulations.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>priors</span> <span class='op'>&lt;-</span> <span class='fu'>prior_summary</span><span class='op'>(</span><span class='va'>attrition_logistic_model_priors</span><span class='op'>)</span>
+<span class='va'>priors</span><span class='op'>$</span><span class='va'>prior</span><span class='op'>$</span><span class='va'>adjusted_scale</span>
+</code></pre>
+</div>
+<pre><code> [1] 0.2736615 2.2871107 5.1013676 3.5134015 2.2668620 2.9340083
+ [7] 1.9390809 3.5386915 5.5480786 1.0007970 0.6900098</code></pre>
+</div>
+<p>With our priors, we can write out our complete model:</p>
+<span class="math display">\[\begin{array}{rll}
+Y_i | β_{0c},β_1,β_2,... β_{12}, \sigma &amp; \stackrel{ind}{\sim} \text{Bern}(\pi_i) &amp; \text{with } \log\left(\frac{\pi_i}{1 - \pi_i}\right) = β_{0c}+β_1X_{i1+}β_2X_{i2}+...+β_{11}X_{i11} \\
+
+
+\beta_{0c} &amp; \sim N(-.72, .36^2) &amp; \\
+\beta_1    &amp; \sim N(0,  0.27^2) &amp; \\
+\beta_2    &amp; \sim N(0, 2.29^2) &amp; \\
+\beta_3    &amp; \sim N(0, 5.1^2) &amp; \\
+\beta_4    &amp; \sim N(0, 3.51^2) &amp; \\
+\beta_5    &amp; \sim N(0, 2.27^2) &amp; \\
+\beta_6    &amp; \sim N(0,  2.93^2) &amp; \\
+\beta_7    &amp; \sim N(0,  1.94^2) &amp; \\
+\beta_8    &amp; \sim N(0,  3.54^2) &amp; \\
+\beta_9    &amp; \sim N(0,  5.55^2) &amp; \\
+\beta_{10}    &amp; \sim N(0,  1.0^2) &amp; \\
+\beta_{11}    &amp; \sim N(0,  0.69^2) &amp; \\
+\end{array}\]</span>
+<h2 id="simulate-the-posterior">Simulate the Posterior</h2>
+<p>Next, we will update our prior understanding of the relationships between attrition and our predictors using data to reach our posterior.</p>
+<p>We can use the <code>update()</code> function to set our model’s <code>prior_PD</code> to <code>FALSE</code>, in effect simulating our posterior model using MCMC techniques with the same model features as the prior model <code>attrition_logistic_model_priors</code>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Simulate posterior models</span>
+<span class='va'>attrition_logistic_model</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/update.html'>update</a></span><span class='op'>(</span><span class='va'>attrition_logistic_model_priors</span>, prior_PD <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<h2 id="check-simulation-stability">Check Simulation Stability</h2>
+<p>Since MCMC simulations only approximate the posterior, and we cannot compare our simulation results to the “true” posterior, it is crucial to check up on our simulations before continuing with our model to make sure the chains are stable. We do this by running some diagnostic tests.</p>
+<p>To see if there is consistency across the four chains we simulated, we can use <code>mcmc_dens_overlay</code>. It is okay and expected that the chains take different paths, but they should have similar features and produce similar posterior approximations.</p>
+<p>Because chains for each variable produce similar posterior approximations, we can say that our simulation is both stable and has enough iterations. Running more iterations would not likely construct much different or improved posterior approximations.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>mcmc_dens_overlay</span><span class='op'>(</span><span class='va'>attrition_logistic_model</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-10-1.png" width="816" /></p>
+</div>
+<p>With a stable simulation, the trace plots produced by <code>mcmc_trace()</code> should essentially look like white noise, without resembling anything or hinting at any trends. None of the trace plots have any discernible trends or outliers, so we can say it is stable. With this, we can proceed to interpret the model output.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'>mcmc_trace</span><span class='op'>(</span><span class='va'>attrition_logistic_model</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-11-1.png" width="816" /></p>
+</div>
+<div style="page-break-after: always;"></div>
+<h1 id="logistic-regressioninterpreting-the-model"><strong>Logistic Regression–Interpreting the Model</strong></h1>
+<p>I will use the posterior <code>tidy()</code> summary to find the posterior medians and 80% credible intervals for the regression coefficients. By performing a simple calculation, we can transform the log(odds) estimate to odds by setting <em>e</em> to the power of the estimate. In the first row, I will illustrate the simple transformation. This transformation will allow us to describe how the odds of attrition change based on the value of the predictor variable while controlling for the other predictors. I will pick out a couple of coefficients for interpretation, but all coefficients can be interpreted similarly.</p>
+<p>These interpretations could give HR an idea of what factors have the most substantial influence over the odds of attrition. While some of the interpretations may seem obvious <em>(i.e., greater job work/life balance leads to decreased odds of attrition)</em>, the magnitude of these coefficients’ impact on the attrition odds can convey what HR might focus on for minimizing attrition overall.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Show model coefficients for interpretation</span>
+<span class='fu'>tidy</span><span class='op'>(</span><span class='va'>attrition_logistic_model</span>, conf.int <span class='op'>=</span> <span class='cn'>TRUE</span>, conf.level <span class='op'>=</span> <span class='fl'>0.8</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 12 x 5
+   term                    estimate std.error conf.low conf.high
+   &lt;chr&gt;                      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 (Intercept)               4.27      0.651    3.44      5.13  
+ 2 Age                      -0.0589    0.0102  -0.0720   -0.0460
+ 3 EnvironmentSatisfaction  -0.334     0.0735  -0.430    -0.243 
+ 4 GenderMale                0.301     0.166    0.0869    0.513 
+ 5 JobInvolvement           -0.552     0.110   -0.691    -0.413 
+ 6 JobSatisfaction          -0.330     0.0719  -0.421    -0.239 
+ 7 StockOptionLevel         -0.512     0.106   -0.650    -0.377 
+ 8 TrainingTimesLastYear    -0.112     0.0662  -0.198    -0.0298
+ 9 WorkLifeBalance          -0.259     0.109   -0.400    -0.118 
+10 OverTimeYes               1.62      0.168    1.41      1.84  
+11 NumCompaniesWorked        0.114     0.0329   0.0714    0.156 
+12 YearsInCurrentRole       -0.109     0.0268  -0.144    -0.0744</code></pre>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:left;">
+Posterior Median Coefficient Transofrmation
+</th>
+<th style="text-align:left;">
+80% Confidence Interval Transformation
+</th>
+<th style="text-align:left;">
+Interpretation
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<code>Age</code>
+</td>
+<td style="text-align:left;">
+e^(-0.059) = 0.943
+</td>
+<td style="text-align:left;">
+(e^(-0.072), e^(-0.046)) = (0.931,0.955)
+</td>
+<td style="text-align:left;">
+Each additional year the average employee has lived, the odds of attrition <strong>decrease by about 5.7%</strong>, or somewhere between 4.5% and 6.9%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>JobInvolvement</code>
+</td>
+<td style="text-align:left;">
+0.577
+</td>
+<td style="text-align:left;">
+(0.501,0.662)
+</td>
+<td style="text-align:left;">
+Each additional rating in job involvement the odds of attrition <strong>decrease by about 42%</strong>, or somewhere between 33% and 50%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>TrainingTimesLastYear</code>
+</td>
+<td style="text-align:left;">
+0.894
+</td>
+<td style="text-align:left;">
+(0.82,0.97)
+</td>
+<td style="text-align:left;">
+Each additional training they received the year prior the odds of attrition <strong>decrease by about 11%</strong>, or somewhere between 3% and 18%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>WorkLifeBalance</code>
+</td>
+<td style="text-align:left;">
+0.772
+</td>
+<td style="text-align:left;">
+(0.67,0.889)
+</td>
+<td style="text-align:left;">
+Each additional rating in work/life balance the odds of attrition <strong>decrease by about 23%</strong>, or somewhere between 11% and 33%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>OverTimeYes</code>
+</td>
+<td style="text-align:left;">
+5.07
+</td>
+<td style="text-align:left;">
+(4.1, 6.28)
+</td>
+<td style="text-align:left;">
+For employees that works overtime, the odds of attrition <strong>increase by about 5 times</strong>, or somewhere between 4.1 and 6.3 times, for the average employee
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div style="page-break-after: always;"></div>
+<h1 id="lasso-logistic-regressionbuilding-the-model"><strong>LASSO Logistic Regression–Building the Model</strong></h1>
+<p>I will go through these steps much more briefly. This model is almost identical to the previous model, so for the most part, the same steps and specifications coincide with what we have done previously.</p>
+<h2 id="specify-the-data-model-1">Specify the Data Model</h2>
+<p>The categorical response variable <span class="math inline">\(Y_i\)</span> does not change from the previous model, so we will use the Bernoulli probability model again.</p>
+<h2 id="specify-the-priors-1">Specify the Priors</h2>
+<p>The centered intercept <span class="math inline">\(β_{0c}\)</span> remains the same, and as I will show below, so do the other prior hyperparameters. Everything stays the same except the prior modeling. Instead of setting the prior to a normal distribution as we did for the regular logistic regression, we will set it to a laplace distribution with a lasso approach. More information about the lasso prior and the other prior options can be found <a href="https://mc-stan.org/rstanarm/reference/priors.html">here</a>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Simulate prior models</span>
+ <span class='va'>attrition_lasso_model_priors</span> <span class='op'>&lt;-</span> <span class='fu'>stan_glm</span><span class='op'>(</span>
+   <span class='va'>Attrition</span> <span class='op'>~</span> <span class='va'>.</span>,
+   prior_intercept <span class='op'>=</span> <span class='fu'>normal</span><span class='op'>(</span><span class='op'>-</span><span class='fl'>1.66</span>, <span class='fl'>.8</span><span class='op'>)</span>,
+   prior <span class='op'>=</span> <span class='fu'>lasso</span><span class='op'>(</span>df <span class='op'>=</span> <span class='fl'>1</span>, location <span class='op'>=</span> <span class='fl'>0</span>, scale <span class='op'>=</span> <span class='cn'>NULL</span>, autoscale <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
+   data <span class='op'>=</span> <span class='va'>Emp_Attrition</span>,
+   family <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/family.html'>binomial</a></span><span class='op'>(</span><span class='op'>)</span>,
+   prior_PD <span class='op'>=</span> <span class='cn'>TRUE</span>,
+   chains <span class='op'>=</span> <span class='fl'>4</span>, iter <span class='op'>=</span> <span class='fl'>5000</span><span class='op'>*</span><span class='fl'>2</span>, seed <span class='op'>=</span> <span class='fl'>84735</span>, refresh <span class='op'>=</span> <span class='fl'>0</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<p>Again, we will use <code>prior_summary()</code> to find the adjusted prior parameters from the simulations. These match up with the priors from the regular logistic regression, meaning our complete model essentially looks identical.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"> <span class='va'>priors</span> <span class='op'>&lt;-</span> <span class='fu'>prior_summary</span><span class='op'>(</span><span class='va'>attrition_lasso_model_priors</span><span class='op'>)</span>
+ <span class='va'>priors</span><span class='op'>$</span><span class='va'>prior</span><span class='op'>$</span><span class='va'>adjusted_scale</span>
+</code></pre>
+</div>
+<pre><code> [1] 0.2736615 2.2871107 5.1013676 3.5134015 2.2668620 2.9340083
+ [7] 1.9390809 3.5386915 5.5480786 1.0007970 0.6900098</code></pre>
+</div>
+<h2 id="simulate-the-posterior-1">Simulate the Posterior</h2>
+<p>We will set the <code>prior_PD</code> to FALSE to simulate the posterior model.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Simulate posterior models</span>
+ <span class='va'>attrition_lasso_model</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/update.html'>update</a></span><span class='op'>(</span><span class='va'>attrition_lasso_model_priors</span>, prior_PD <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<h2 id="check-simulation-stability-1">Check Simulation Stability</h2>
+<p>Again, we will check for simulation stability for this model since we used MCMC techniques to construct the model. Both of these plots show stability similar to the regular logistic regression simulations. We can proceed to interpret the model output.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"> <span class='fu'>mcmc_dens_overlay</span><span class='op'>(</span><span class='va'>attrition_lasso_model</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-18-1.png" width="816" /></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"> <span class='fu'>mcmc_trace</span><span class='op'>(</span><span class='va'>attrition_lasso_model</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-19-1.png" width="816" /></p>
+</div>
+<h1 id="lasso-logistic-regressioninterpreting-the-model"><strong>LASSO Logistic Regression–Interpreting the Model</strong></h1>
+<p>Now that we have simulated the posterior model through the same steps as the logistic regression model, one might question where the differences lie. The answer is in the logistic regression coefficients, which have shifted closer to 0. This change can be seen in the <code>tidy()</code> summary that shows us the posterior medians and 80% confidence intervals of the logistic regression coefficients. I transformed the coefficients in the same manner as the regular logistic regression coefficients.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Show model coefficients for interpretation</span>
+<span class='fu'>tidy</span><span class='op'>(</span><span class='va'>attrition_lasso_model</span>, conf.int <span class='op'>=</span> <span class='cn'>TRUE</span>, conf.level <span class='op'>=</span> <span class='fl'>0.8</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code># A tibble: 12 x 5
+   term                    estimate std.error conf.low conf.high
+   &lt;chr&gt;                      &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+ 1 (Intercept)               3.90      0.656    3.07      4.74  
+ 2 Age                      -0.0554    0.0100  -0.0687   -0.0428
+ 3 EnvironmentSatisfaction  -0.315     0.0724  -0.407    -0.221 
+ 4 GenderMale                0.257     0.162    0.0546    0.468 
+ 5 JobInvolvement           -0.518     0.109   -0.657    -0.375 
+ 6 JobSatisfaction          -0.309     0.0710  -0.400    -0.217 
+ 7 StockOptionLevel         -0.480     0.104   -0.619    -0.349 
+ 8 TrainingTimesLastYear    -0.0991    0.0631  -0.182    -0.0195
+ 9 WorkLifeBalance          -0.232     0.109   -0.370    -0.0956
+10 OverTimeYes               1.56      0.165    1.35      1.78  
+11 NumCompaniesWorked        0.103     0.0329   0.0608    0.144 
+12 YearsInCurrentRole       -0.103     0.0270  -0.138    -0.0694</code></pre>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<table class="table table-hover" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:left;">
+Posterior Median Coefficient Transofrmation
+</th>
+<th style="text-align:left;">
+80% Confidence Interval Transformation
+</th>
+<th style="text-align:left;">
+Interpretation
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<code>Age</code>
+</td>
+<td style="text-align:left;">
+0.946
+</td>
+<td style="text-align:left;">
+(0.933,0.958)
+</td>
+<td style="text-align:left;">
+Each additional year lived, the odds of attrition <strong>decrease by about 5.4%</strong>, or somewhere between 4.2% and 6.7%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>JobInvolvement</code>
+</td>
+<td style="text-align:left;">
+0.595
+</td>
+<td style="text-align:left;">
+(0.518,0.687)
+</td>
+<td style="text-align:left;">
+Each additional rating in job involvement, the odds of attrition <strong>decrease by about 40.5%</strong>, or somewhere between 31.3 and 48.2%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>TrainingTimesLastYear</code>
+</td>
+<td style="text-align:left;">
+0.905
+</td>
+<td style="text-align:left;">
+(0.834,0.98)
+</td>
+<td style="text-align:left;">
+Each additional training they received the year prior, the odds of attrition <strong>decrease by about 10.5%</strong>, or somewhere between 2% and 17%, for the everage employeee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>WorkLifeBalance</code>
+</td>
+<td style="text-align:left;">
+0.772
+</td>
+<td style="text-align:left;">
+(0.67,0.889)
+</td>
+<td style="text-align:left;">
+Each additional rating in work/life balance, the odds of attrition <strong>decrease by about 23%</strong>, or somewhere between 11% and 33%, for the average employee
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<code>OverTimeYes</code>
+</td>
+<td style="text-align:left;">
+4.78
+</td>
+<td style="text-align:left;">
+(3.86, 5.93)
+</td>
+<td style="text-align:left;">
+For employees that works overtime, the odds of attrition <strong>increase by about 4.8 times</strong>, or somewhere between 3.9 and 5.9 times, for the average employee
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>To better illustrate the shrinkage that occurred, I can use <code>mcmc_areas()</code> to plot the posterior distributions of the regression coefficients for both the LASSO logistic regression model and the regular logistic regression model. Although minimal, the regression coefficients for the LASSO logistic regression model have shifted closer to 0. If more of the features were modeled, it’s possible that some of the less relevant features would have shrunk to 0 more drastically. If any regression coefficients had shrunk more drastically to 0, I would consider re-building the model without that feature.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='va'>logistic_plot</span> <span class='op'>&lt;-</span> <span class='fu'>mcmc_areas</span><span class='op'>(</span><span class='va'>attrition_logistic_model</span>, pars <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Age"</span>, <span class='st'>"EnvironmentSatisfaction"</span>, <span class='st'>"GenderMale"</span>, <span class='st'>"JobInvolvement"</span>, <span class='st'>"JobSatisfaction"</span>, <span class='st'>"StockOptionLevel"</span>, <span class='st'>"TrainingTimesLastYear"</span>, <span class='st'>"WorkLifeBalance"</span>, <span class='st'>"OverTimeYes"</span>, <span class='st'>"NumCompaniesWorked"</span>, <span class='st'>"YearsInCurrentRole"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+  <span class='fu'><a href='https://rdrr.io/r/graphics/plot.window.html'>xlim</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>1.5</span>,<span class='fl'>3</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+ <span class='fu'>labs</span><span class='op'>(</span>
+   title <span class='op'>=</span> <span class='st'>"Logistic Regression Posterior Distributions"</span>,
+   subtitle <span class='op'>=</span> <span class='st'>"with medians and 80% intervals"</span>
+ <span class='op'>)</span>
+
+<span class='va'>lasso_plot</span> <span class='op'>&lt;-</span> <span class='fu'>mcmc_areas</span><span class='op'>(</span><span class='va'>attrition_lasso_model</span>, pars <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"Age"</span>, <span class='st'>"EnvironmentSatisfaction"</span>, <span class='st'>"GenderMale"</span>, <span class='st'>"JobInvolvement"</span>, <span class='st'>"JobSatisfaction"</span>, <span class='st'>"StockOptionLevel"</span>, <span class='st'>"TrainingTimesLastYear"</span>, <span class='st'>"WorkLifeBalance"</span>, <span class='st'>"OverTimeYes"</span>, <span class='st'>"NumCompaniesWorked"</span>, <span class='st'>"YearsInCurrentRole"</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span> 
+   <span class='fu'><a href='https://rdrr.io/r/graphics/plot.window.html'>xlim</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>-</span><span class='fl'>1.5</span>,<span class='fl'>3</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span>
+ <span class='fu'>labs</span><span class='op'>(</span>
+   title <span class='op'>=</span> <span class='st'>"LASSO Logostic Regression Posterior Distributions"</span>,
+   subtitle <span class='op'>=</span> <span class='st'>"with medians and 80% intervals"</span>
+ <span class='op'>)</span>
+
+<span class='fu'>grid.arrange</span><span class='op'>(</span><span class='va'>logistic_plot</span>, <span class='va'>lasso_plot</span>, nrow <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-22-1.png" width="768" /></p>
+</div>
+<div style="page-break-after: always;"></div>
+<h1 id="naive-bayesbuilding-the-model"><strong>Naive Bayes–Building the Model</strong></h1>
+<p>When using Naive Bayes, we do not need to provide prior models or Markov chains; instead, this model calculates prior probabilities directly from the data. Thanks to this, it does not require MCMC simulations, making it more computationally efficient than logistic regression. This makes the process of building the model quite simple. We will use <code>naiveBayes()</code> to model the posterior.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='co'>#Build posterior model</span>
+<span class='va'>attrition_naive_model</span> <span class='op'>&lt;-</span> <span class='fu'>naiveBayes</span><span class='op'>(</span><span class='va'>Attrition</span> <span class='op'>~</span> <span class='va'>.</span>, data <span class='op'>=</span> <span class='va'>Emp_Attrition</span><span class='op'>)</span>
+</code></pre>
+</div>
+</div>
+<h1 id="naive-bayesinterpreting-the-model"><strong>Naive Bayes–Interpreting the Model</strong></h1>
+<p>While computationally efficient, Naive Bayes has some downsides–one that I have mentioned is that it does not support any interpretation of the predictor variables’ relationships to the predicted variable. This drawback is okay only if we do not care about these relationships and require only the predicted classifications, which will depend heavily on the situation. In this case, the interpretation would be beneficial for HR. While knowing which employees are more likely to quit would help with direct intervention, understanding how these features affect the employees would allow HR to consider implementing more wide-sweeping changes to prevent overall attrition.</p>
+<div style="page-break-after: always;"></div>
+<h1 id="evaluating-the-models"><strong>Evaluating the Models</strong></h1>
+<p>Now that we have built and interpreted the models where possible, it is time to evaluate them. Just because a model is correctly built does not mean it produces accurate predictions or should be used. It is essential to determine how wrong the models are and if the predictive accuracy is high enough to be helpful.</p>
+<h2 id="how-wrong-are-the-models">How Wrong are the Models?</h2>
+<p>Now we will perform a posterior predictive check to confirm that the simulated data from our posterior logistic regression model is similar to the original data to confirm that the assumptions behind our Bayesian logistic regression model are reasonable. From each of 100 posterior simulated datasets, we record the proportion of outcomes Y that are 1, <em>(i.e., the proportion of employees that leave the company)</em>, using the <code>proportion_attrition()</code> function.</p>
+<h3 id="logistic-regression">Logistic Regression</h3>
+<p>Using regular logistic regression, most of our posterior simulated datasets saw attrition for about 16% of employees, equal to the observed proportion of attrition in the original data. However, some saw attrition from as few as 12% of the employees or as many as 20%.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>84735</span><span class='op'>)</span>
+<span class='va'>proportion_attrition</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>{</span><span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span><span class='op'>(</span><span class='va'>x</span> <span class='op'>==</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>}</span>
+ <span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>attrition_logistic_model</span>, nreps <span class='op'>=</span> <span class='fl'>100</span>, 
+          plotfun <span class='op'>=</span> <span class='st'>"stat"</span>, stat <span class='op'>=</span> <span class='st'>"proportion_attrition"</span><span class='op'>)</span> <span class='op'>+</span> 
+   <span class='fu'>xlab</span><span class='op'>(</span><span class='st'>"probability of attrition"</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-24-1.png" width="816" /></p>
+</div>
+<h3 id="lasso-logistic-regression">LASSO Logistic Regression</h3>
+<p>Using logistic regression with lasso regularisation, most of our posterior simulated datasets saw attrition for about 16% of employees (or more accurately, a little under 16% and a little over 16%), similar to the observed proportion of attrition in the original data. Some saw attrition in the same range as the simulations in the previous model (12% to 20%). This looks very similar to the regular logistic regression posterior model; however, the simulated proportions in this model are less normally distributed since there is a slight dip in the middle.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>84735</span><span class='op'>)</span>
+<span class='va'>proportion_attrition</span> <span class='op'>&lt;-</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span><span class='op'>{</span><span class='fu'><a href='https://rdrr.io/r/base/mean.html'>mean</a></span><span class='op'>(</span><span class='va'>x</span> <span class='op'>==</span> <span class='fl'>1</span><span class='op'>)</span><span class='op'>}</span>
+  <span class='fu'>pp_check</span><span class='op'>(</span><span class='va'>attrition_lasso_model</span>, nreps <span class='op'>=</span> <span class='fl'>100</span>,
+           plotfun <span class='op'>=</span> <span class='st'>"stat"</span>, stat <span class='op'>=</span> <span class='st'>"proportion_attrition"</span><span class='op'>)</span> <span class='op'>+</span>
+    <span class='fu'>xlab</span><span class='op'>(</span><span class='st'>"probability of attrition"</span><span class='op'>)</span>
+</code></pre>
+</div>
+<p><img src="bayesian_attrition_files/figure-html5/unnamed-chunk-25-1.png" width="816" /></p>
+</div>
+<p>Based on these plots, the simulated data for both is similar to the original data, so both models could be helpful. Since the Naive Bayes does not have simulated data, checking if the model is wrong is unnecessary.</p>
+<h2 id="how-accurate-are-the-posterior-predictions">How Accurate are the Posterior Predictions?</h2>
+<p>To determine the accuracy of classification models, we can use sensitivity, specificity, and overall accuracy:</p>
+<ul>
+<li><p>The <strong>sensitivity</strong> of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified would leave <em>(i.e., the proportion of <span class="math inline">\(Y = 1\)</span> outcomes that we correctly predicted to be 1)</em>.</p></li>
+<li><p>The <strong>specificity</strong> of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified as would not leave <em>(i.e., the proportion of <span class="math inline">\(Y = 0\)</span> outcomes that we correctly predicted to be 0)</em>.</p></li>
+<li><p>The <strong>overall accuracy</strong> of our posterior classifications reflects the overall proportion of employees we correctly classified.</p></li>
+</ul>
+<p>We can use <code>classification_summary()</code> to calculate these posterior predictive outcomes for both the logistic regression and the LASSO logistic regression model. In this case, we care more about accurately predicting employees who will leave the company than employees who will not. If the fictitious company can accurately predict the employees likely to leave, HR can step in before it’s too late and try to work with the employee to keep them at the company.</p>
+<p>In short, we want to maximize the sensitivity of the model while keeping the overall accuracy from dropping too low. To do this, we can alter the cut-off for the classifications of the logistic regression and LASSO logistic regression models.</p>
+<p>The cut-off determines the following classification rule: <strong>If more than the cut-off our predictions predict the employee will leave the company , classify the employee as someone who will leave the company</strong></p>
+<p>If we set the cut-off to the natural 0.5, then if 50% of our posterior predictions call for attrition, we’ll classify the employee as someone who will leave the company. The cut-off can be used to change the sensitivity and specificity of the predictions, lowering the cut-off increases sensitivity while decreasing specificity while raising the cut-off has the opposite effect. Because of this, the cut-off should be altered on a case by case basis. Since we want to maximize the sensitivity, we will lower the cut-off to .2. If even 20% of our posterior predictions call for attrition, we’ll classify that employee as someone who will leave the company, allowing HR to target them.</p>
+<h3 id="logistic-regression-1">Logistic Regression</h3>
+<p>Out of the 237 employees who quit, the logistic regression posterior predicted 159 of them accurately, accounting for a sensitivity of 67.1%.</p>
+<p>Out of the 1,470 total employees, the logistic regression posterior predicted 1,144 of them accurately, accounting for an overall accuracy of 77.8%.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>84735</span><span class='op'>)</span>
+<span class='fu'>classification_summary</span><span class='op'>(</span>model <span class='op'>=</span> <span class='va'>attrition_logistic_model</span>, data <span class='op'>=</span> <span class='va'>Emp_Attrition</span>, cutoff <span class='op'>=</span> <span class='fl'>0.2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>$confusion_matrix
+ y   0   1
+ 0 985 248
+ 1  78 159
+
+$accuracy_rates
+                          
+sensitivity      0.6708861
+specificity      0.7988646
+overall_accuracy 0.7782313</code></pre>
+</div>
+<h3 id="lasso-logistic-regression-1">LASSO Logistic Regression</h3>
+<p>Out of the 237 employees who quit, the LASSO logistic regression posterior predicted 159 of them, accounting for a sensitivity of 67.1%.</p>
+<p>Out of the 1,470 total employees, the LASSO logistic regression posterior predicted 1,144 of them accurately, accounting for an overall accuracy of 77.8%.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"> <span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>84735</span><span class='op'>)</span>
+ <span class='fu'>classification_summary</span><span class='op'>(</span>model <span class='op'>=</span> <span class='va'>attrition_lasso_model</span>, data <span class='op'>=</span> <span class='va'>Emp_Attrition</span>, cutoff <span class='op'>=</span> <span class='fl'>0.2</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>$confusion_matrix
+ y   0   1
+ 0 984 249
+ 1  78 159
+
+$accuracy_rates
+                          
+sensitivity      0.6708861
+specificity      0.7980535
+overall_accuracy 0.7775510</code></pre>
+</div>
+<h3 id="naive-bayes">Naive Bayes</h3>
+<p>Like the logistic regression and the LASSO logistic regression models, we can evaluate the Naive Bayes model by its specificity, sensitivity, and accuracy using <code>naive_classification_summary()</code>.</p>
+<p>The naive Bayes model classifies the employees in a different manner, where the logistic regression follows the cut-off rule, this classification follows a simple rule: <strong>classify the employee as whichever attrition value has the highest posterior probability</strong></p>
+<p>Out of the 237 employees who quit, the Naive Bayes posterior predicted 60 of them, accounting for a sensitivity of 25.3%.</p>
+<p>Out of the 1,470 total employees, the Naive Bayes posterior predicted 1,272 of them accurately, accounting for an overall accuracy of 86.5%.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>84735</span><span class='op'>)</span>
+<span class='fu'>naive_classification_summary</span><span class='op'>(</span>model <span class='op'>=</span> <span class='va'>attrition_naive_model</span>, data <span class='op'>=</span> <span class='va'>Emp_Attrition</span>, y <span class='op'>=</span> <span class='st'>"Attrition"</span><span class='op'>)</span>
+</code></pre>
+</div>
+<pre><code>$confusion_matrix
+ Attrition             0           1
+         0 98.30% (1212)  1.70% (21)
+         1 74.68%  (177) 25.32% (60)
+
+$overall_accuracy
+[1] 0.8653061</code></pre>
+</div>
+<h1 id="conclusion"><strong>Conclusion</strong></h1>
+<h3 id="model-usefulness">Model Usefulness</h3>
+<p>Based on the evaluation, I would find the logistic regression and the LASSO logistic regression models most beneficial. The differences in these models were, unfortunately, pretty minimal. The prediction accuracy for the logistic regression model and the LASSO logistic regression model were identical. The shrinkage that the LASSO technique incurred was too minimal to affect the posterior classification predictions, possibly because all of the predictors were useful and did not shrink much closer to 0. While these models misclassified 78 of the employees who left the company, they still accurately classified most of the employees who left. This accuracy would provide a good start for HR to target employees and direct their strategies for minimizing attrition.</p>
+<p>In this case, I would not find the Naive Bayes model helpful. The model had poor sensitivity and misclassified most of the employees who left the company, which is our main priority for the model. This poor sensitivity is likely because I could not set a cut-off like I could for the logistic regression models. It is also possible that some of the predictors violated the assumption that all predictors are independent, for example, the predictors <code>Age</code> and <code>NumCompaniesWorked</code>. While we can use the Naive Bayes model to predict which employees are more likely to leave, without having model coefficients, we cannot interpret the variable relationships. The lack of interpretation for Naive Bayes is a major drawback in this situation, because it would not give HR a sense of how the employee profile is connected with attrition. The Naive Bayes model would only provide insight that could lead to responsive measures–not preventative measures.</p>
+<h3 id="data-driven-recommendations">Data-Driven Recommendations</h3>
+<p>We have built the models, interpreted them, and decided on their usefulness. Now it is finally time to put these models to work.</p>
+<p>While it would be helpful for HR to target employees to reach out to and provide an incentive to stay with the company, it might be beneficial to work more in the long term. This might mean changing company policies or engaging in new initiatives that would decrease the odds of attrition throughout the company. This tactic would lean more towards preventative than responsive measures.</p>
+<p>From the models I built, I could make a few recommendations to HR:</p>
+<ul>
+<li><p>The models show that working overtime has the most significant impact on attrition odds. HR can delve more into this issue to see if specific roles are understaffed, consider giving overtime employees extra paid time off, or implement a strict no-overtime practice that might benefit the company.</p></li>
+<li><p>Job Involvement also strongly impacted attrition odds, showing that employees who felt less involved had higher odds of leaving the company. HR might consider a new initiative that fosters a more engaging company culture.</p></li>
+</ul>
+<p>We have gone over many steps and much content in the span of this work. <strong>I hope this work has piqued the interest or curiosity of analysts and provided a starting foundation for them to utilize the Bayesian approach for business analytics.</strong></p>
+<h1 id="next-steps"><strong>Next Steps</strong></h1>
+<p>There are a couple of next steps I could take with this analysis, including:</p>
+<ul>
+<li><strong>Modeling with a larger dataset.</strong> With under 1,500 data observations, the models I built did not have much to work with. I would be interested in simulating similar models on a larger dataset to see if the classification prediction accuracy improves.</li>
+<li><strong>Predicting new data.</strong> It would be interesting to predict new employee data to see how the models perform on data outside the sample.</li>
+<li><strong>Exploring other prior distributions.</strong> I would like to look more into other prior distributions to see how they might affect the parameter coefficients and the model’s accuracy.</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
@@ -2422,6 +3193,15 @@ Projects
 <div class="d-appendix">
 </div>
 
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
 
 <!--radix_placeholder_site_after_body-->
 <!--/radix_placeholder_site_after_body-->

@@ -5,23 +5,696 @@ description: |
 site: distill::distill_website
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+```{r echo = FALSE}
+#Prevent long warning messages for code chunks and sets all image sizes
+
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.height = 6.5, 
+                      fig.width = 8.5,
+                      fig.pos = "center")
 ```
 
-For the final project in the Bayesian Statistics course, I used Bayesian modeling techniques with the `stanarm` package to predict employee attrition.
+```{css, echo=FALSE}
+#Change text size and alignment for headers
+
+h1, h2, h3 {
+      text-align: center;
+}
+h1 {
+  font-size: 56px;
+}
+h2 {
+  font-size: 48px;
+}
+h3 {
+  font-size: 36px;
+}
+```
+
+```{r, echo = FALSE}
+#Import packages
+
+library(readr)
+library(tidyverse)
+library(miscset)
+library(gridExtra)
+library(tidybayes)
+library(rstan)
+library(rstanarm)
+library(bayesplot)
+library(bayesrules)
+library(broom.mixed)
+library(e1071)
+library(kableExtra)
+library(janitor)
+```
+
+# **Introduction**
 
 
-# Project Overview
+## The Business Problem
 
-Going into the project, we established multiple hypotheses to be tested and used these to determine what data to collect. To standardize the data collection, we discussed and agreed upon the variable criteria. Our main areas of interest included binary variables 'promiscuity', 'drugs_alcohol', and 'fights_back', as well as qualitative variables such as 'gender', 'ethnicity', and 'year_released', all of which became categorical data for our analysis. After collecting the data, we created Kaplan-Meier curves and a Cox PH and Weibull model for each variable of interest, using the p values, hazard ratios, and Kaplan-Meier curves to determine if we could reject the null hypotheses. We also performed multivariate analysis and created Cox Proportional Hazard tables to see how variables interacted with one another. 
+As data has grown globally, so has its usage. For businesses, data analytics has become quite a powerful tool. Over the years, it has become more beneficial for businesses to become data-driven. Used to drive strategy, maximize efficiencies and sales, identify new opportunities, and much more---businesses can use data analytics to leverage insights to make wise business decisions. 
 
-We considered the limitations of our analysis, which stemmed from creating the dataset ourselves. We interpreted our variable analysis, putting our findings into the bigger picture, and summarized the main insights. 
+Developing strategies through data analysis might require descriptive, diagnostic, predictive, or prescriptive methods. The focus of this work will be on predictive modeling, specifically **classification modeling**. Classification modeling uses supervised learning methods to predict the class or category of new data. Countless business scenarios can use this type of data modeling, and every business could profit from utilizing them. A hotel could profit from predicting whether or not a booking will be canceled, a service company could profit from predicting whether or not a customer will cancel their subscription, and a marketing team could profit from predicting whether or not consumers will respond positively to their marketing campaigns.
+
+Although many business scenarios would benefit from classification modeling, **for this work, I will focus on employee attrition**. Businesses hire employees, fire employees, and lose them through other means. Attrition impacts all businesses, and there is a great motivation to understand the driving factors of employee attrition and minimize it. Just like businesses work to keep their customers from leaving their services, businesses also work to keep their employees from leaving the company. Losing employees represents a significant loss to the company---not only does it cause a disruption in the business, but it also costs time, money, and effort to recruit a replacement, hire that replacement, and train them. While attrition cannot be completely eliminated, it can be cut off through an improved understanding of the workforce and targeted intervention. There would be multiple advantages from building a classification model that accurately predicts which employees are likely to quit. It could shed light on the relationships between employee characteristics and their likelihood of attrition, which would provide HR with a better understanding of their workforce and push them to implement widespread changes. Discovering employees with a higher likelihood of attrition would also provide HR the opportunity to step in and provide incentives for the employees to stay or resolve any potential situations before they leave.
+
+Now that I have discussed the business scenario and the importance of building a classification model to predict employee attrition, I will describe my approach to building such models.
 
 
-*The following is an excerpt from our project's website, which delves deeper into our data collection decisions, as well as one of the Kaplan Meier curves.*
+## The Bayesian Approach
 
-### Data Collection
+In this analysis, I will be using Bayesian statistics, an approach to data analysis that combines one’s prior knowledge with new evidence to inform the probability of an event or outcome. This method of statistical inference is based on Bayes' Theorem, a mathematical formula that updates prior probabilities *(i.e., the belief about the likelihood of the event occurring)* based on new data *(i.e., the information that the new data provides about the likelihood of the event occurring)*. Instead of returning a single posterior probability, the theorem produces a full posterior distribution of the given parameter.
 
-For a project like this, there was no dataset we could find to suit our needs, so we decided to create our own. First we had to determine how to define slashers in order to decide which movies to include in the dataset. We wanted to define slasher films based on the most prevalent, trope-like characteristics: a psychopathic killer stalks and graphically murders a group of adolescent victims. We did not include movies with supernatural killers such as 'Final Destination' or movies that focus or include only one victim, such as 'Hush'. We started out with the most popular, well-known slasher films such as 'Halloween', 'Scream', and 'Friday the 13th', and went from there picking the most popular movies that fit our definition. In order to get a good spread of the sub-genre, we decided to pick five movies from each decade, starting in the 1970's and ending in the 2010's. We recorded each character death caused by the slasher, and included main characters who survived attacks by the slasher. 
 
+If the prior knowledge is weak or unreliable, the data will be weighted more heavily when determining the posterior probability distribution. If the new data is unreliable or minimal, the prior knowledge will be more heavily weighted. **In simple terms, Bayesian statistics depend on both the probability of the observed data and prior knowledge while finding a balance between the two.** 
+
+
+## The Bayesian Models
+
+I will briefly go over the three Bayesian models I will build: logistic regression, LASSO logistic regression, and Naive Bayes.
+Naive Bayes and logistic regression are two popular models used for classification, whose algorithms are similar yet different in many ways. I will briefly go over their differences first and then describe how LASSO logistic regression differs from regular logistic regression.
+
+
+**Logistic Regression:**
+
+* *Discriminative model*: models the decision boundary between the classes
+* Only used for binary response variables
+* Can use coefficients to interpret relationships between variables 
+* Requires MCMC simulations
+
+**Naive Bayes:**
+
+* *Generative model*: models the actual distribution of each class
+* Can be used for categorical response variables with two or more categories
+* Cannot explore the relationship between variables
+* Called naive for its naive assumption that all features are independent of each other, which is not always accurate
+* Higher bias but lower variance
+* Computationally efficient (does not require MCMC simulations)
+
+
+**LASSO Logistic Regression** is similar to regular logistic regression, except it utilizes regularization through shrinkage priors. It imposes a constraint on the model variables that causes some of their coefficients to shrink toward zero, keeping the more critical variables the same. This technique effectively increases the bias of the model in order to lower its variance. This method is excellent for feature selection when there is high dimensional data *(ie when there are many variables compared to the number of observations)* and can be useful for improving predictions. 
+
+
+## The Motivation
+
+I will build, interpret, and evaluate the posterior models in this work. For each model, I will walk through determining the model distribution, specifying priors, and setting up the posterior model. I will also show how to interpret these models, and then evaluate their accuracy all together at the end. Throughout the work, I will provide both the code and the results so that they may be replicated on this dataset or tweaked and used on another dataset. 
+
+I hope this work can explain and illustrate the benefits of utilizing Bayesian statistics for business intelligence analytics. I would like to introduce analysts to Bayesian modeling techniques and encourage them to employ these techniques, using my code and output as a reference if helpful. While there is work that describes the purpose and math behind Bayesian modeling and techniques, and some that show model outputs, minimal work walks through each step while providing the actual code. In providing the code and the output as I give examples of how to construct Bayesian models, interpret them, and evaluate, I hope analysts may replicate or further research the techniques for future usage.  
+
+
+\newpage
+
+# **The Data**
+
+The dataset I will use for my analysis details roughly 1,500 employees of a fictitious company. The data includes employees who currently work for the company and employees who have left the company. It contains 30 additional variables for each employee, including gender, age, and if they work overtime. This data was created by IBM and can be downloaded from Kaggle [here](https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset). I have included a data dictionary below to describe the variables I will use in the models.
+
+```{r}
+#Import data, remove unused variables, adjust predicted variable 
+
+Emp_Attrition <- read.csv("attrition.csv")
+
+Emp_Attrition <-
+ Emp_Attrition %>% 
+  mutate(Attrition = ifelse(Attrition=="Yes", 1, 0)) %>% 
+  rename(Age = "ï..Age") %>% 
+  select(Attrition, Age, EnvironmentSatisfaction, Gender, JobInvolvement, JobSatisfaction, StockOptionLevel, 
+         TrainingTimesLastYear, WorkLifeBalance, OverTime, NumCompaniesWorked, YearsInCurrentRole)
+```
+
+## Data Dictionary
+
+```{r, echo = FALSE}
+#Set up data dictionary content
+
+dataset_info <- tribble(
+  ~ indicator, ~ description, ~ type,
+  "`Attrition`",   "Whether or not employee leaves company (0,1).", "Integer",
+  "`Age`", "Age of employee.", "Integer",
+  "`EnvironmentSatisfaction`", "0 - 4 rating of employee's environment satisfaction (1 = 'Low', 2 = 'Medium', 3 = 'High', 4 = 'Very High').",  
+  "Integer",
+  "`Gender`", "Gender of employee (Female, Male).", "Character",
+  "`JobInvolvement`", "0 - 4 rating of  employee's involvement (1 = 'Low', 2 = 'Medium', 3 = 'High', 4 = 'Very High').", "Integer",
+  "`JobSatisfaction`", "0 - 4 rating of employee's job satisfaction (1 = 'Low', 2 = 'Medium', 3 = 'High', 4 = 'Very High').", "Integer",
+  "`StockOptionLevel`", "How much company stocks employee owns.", "Integer",
+  "`TrainingTimesLastYear`", "Number of training sessions employees received the previous year.", "Integer",
+  "`WorkLifeBalance`", "0 - 4 rating of employee work/life balance (1 = 'Bad', 2 = 'Good', 3 = 'Better', 4 = 'Best').", "Integer",
+  "`OverTime`", "Whether or not the employee works overtime (Yes, No).", "Character",
+  "`NumCompaniesWorked`", "Number of companies employee has worked at previously.", "Integer",
+  "`YearsInCurrentRole`", "Number of years employee has worked their current role.", "Integer"
+)
+```
+
+```{r, echo = FALSE}
+#Create data dictionary
+
+kable(
+  dataset_info,
+  format = "html",
+  col.names = c("Name", "Descrition", "Data Type")) %>%
+  kable_styling(bootstrap_options = c("hover"))
+```
+
+\newpage
+
+# **Logistic Regression--Building the Model**
+
+## Specify the Data Model
+
+
+We will start with our predicted variable, `Attrition`. Because this is a binary categorical response variable, we let $Y_i$ be the 0 or 1 indicator of whether or not any given employee i quits. *When importing the dataset, we mutated this variable to reflect this.*
+
+$$Y = \begin{cases}
+ 1 & \text{Employee Leaves Company} \\
+ 0 & \text{Employee does not Leave Company} \\
+\end{cases}$$
+
+Since $Y_i$ is a discrete binary variable, the Bernoulli probability model is the most appropriate model structure for the response variable.
+
+
+$$Y_i|π_i∼Bern(π_i)\text{ where } π_i \text{ denotes the probability of attrition for employee i}.$$
+
+Now we must describe how the probability of attrition $π_i$ depends on our predictors, $(X_1, X_2, ... X_{11})$ by writing the Bernoulli mean $π_i$ as a linear function of the predictors. We will assume that $π_i$ depends on our predictors through the logit link function $g(π_i)=log(\frac{π_i}{1-π_i})$, which evaluates the log(odds of attrition) to be linearly related to our predictors.
+
+$Y_i|β_{0c},β_1,β_2,...β_{11} ind∼Bern(π_i) \text{ with } log (\frac{π_i}{1−π_i})=β_{0c}+β_1X_{1+}β_2X_{2}+...+β_{11}X_{11}$
+
+
+## Specify the Priors
+
+
+Alone, the model we specified previously is a simple logistic regression model. It does not take into account any prior knowledge we might have about the predictors or the predicted variable, and this is where the Bayesian techniques come into play. We can incorporate prior models for the logistic regression parameters $(β_{0c}, β_1 ... β_{11})$ to go from a frequentist model to a Bayesian model. So just as $π_i$ is written as a linear function of $(X_1, X_2, ... X_{11})$, we can write each regression parameter as a linear function. **To simplify the model and stay consistent with the `rstanarm` framework we will use, we will make the assumption that all prior models of these regression parameters are independent of each other.**
+
+
+To determine the structure of these priors, we must consider what values these parameters could take. The intercept and slope regression parameters can take any values in the real line, meaning the model line can cross anywhere on the y-axis, and the slope of the line can be any value: positive, negative, or 0. To this end, we will specify these prior distributions as normal, since normal distributions can also take any values on the real line.
+
+I will write out a couple of these prior model distributions as examples:
+$$β_{0c}\text{ ~ }N(m_0, s_0^2)$$
+$$β_{1}\text{ ~ } N(m_1, s_1^2)$$
+
+$$β_{11}\text{ ~ } N(m_{11}, s_{11}^2)$$
+
+Next, we will tune our prior models for the parameter coefficients $(β_{0c},β_1...β_{11})$.
+
+
+I will manually calculate the hyperparameters $(m_0, s_0)$ of the centered intercept $β_{0c}$. We use the centered intercept in place of the model baseline $β_0$ because it is more intuitive. The centered intercept reflects the typical attrition at the typical values for each predictor, whereas the model baseline would reflect the attrition when all predictors are at 0 or at what the model assumes is the baseline. We will use this calculated centered intercept to simulate our logistic regression model.
+ 
+
+Onto the calculation: from our data, we can calculate that 16% of all the employees have left the company. We have a prior understanding that there's a roughly 16% chance that the average employee will leave the company, so $π ≈ 0.16$.  
+
+
+We can calculate the prior mean for $β_{0c}$ on the log(odds) scale:
+$$log(\frac{.16}{1-.16}) = -1.66$$
+We have a vague understanding that the log(odds of attrition) might range from roughly -3.32 to 0 (−1.66±2∗0.83). Since this is not very meaningful, we can transform this to find the odds and probability of attrition for an average employee.
+
+$$\text{odds: } (e^{-3.32}, e^0) = (0.036, 1)$$
+$$\text{probability: } (\frac{.036}{1+.036}, \frac{1}{1+1}) = (.035,0.5)$$
+From this we can determine:
+
+* the odds of attrition for an average employee could be somewhere between 0.036 and 1.
+* the probability of attrition for an average employee could be somewhere between 0.035 and 0.5.
+
+There is quite a bit of variance in our prior understanding of the probability of the average employee quitting. This large variance means our prior understanding is not very informative, so **we can call this a weak prior**.
+
+Now that we have manually calculated the centered intercept, we will utilize the default framework of the prior models used by the `rstanarm` package to tune the rest of the hyperparameters to match our prior understanding of our model parameters $(β_{0c},β_1...β_{11})$. To do this, we will use the Markov chain Monte Carlo (MCMC) simulation techniques. Markov chains essentially mimic a random sample that eventually converges to the posterior. Each iterative sample depends on the previous sample; the samples are not independent and are not taken directly from the posterior pdf.
+
+
+We will use `stan_glm()` to simulate 20,000 sets of parameters $(β_{0c},β_1...β_{11})$ from the prior models using MCMC, allowing us to specify our weakly informative priors. By setting `prior_PD` to `TRUE`, we simulate the prior model. We set the `family` to `binomial` to show that our logistic regression model has a data structure specified by a Bernoulli model. We can use the prior centered mean for $β_{0c}$ that we calculated on the log(odds) scale to set the `prior_intercept` with a standard deviation of half its magnitude. We have a weak prior understanding of our parameters as well as their scales, so we set `autoscale` to `TRUE`so that `stan_glm()` can adjust the default priors. These adjusted priors are tuned to identify sensible parameter values by looking into the scales of the data. We call these scaled default priors weakly informative, meaning we have a general prior uncertainty about the model parameters. It is important to note that these weakly informative priors are preferable to vague priors, which would consider more non-sensible parameter values. 
+
+
+```{r}
+#Simulate prior model
+
+attrition_logistic_model_priors <- stan_glm(
+  Attrition ~.,
+  prior_intercept = normal(-1.66, .8),
+  prior = normal(0, 2.5, autoscale = TRUE), 
+  data = Emp_Attrition,
+  family = binomial(),
+  prior_PD = TRUE,
+  chains = 4, iter = 5000*2, seed = 84735, refresh = 0)
+```
+
+Next we'll use `prior_summary()` to find the adjusted prior parameters from the simulations.
+
+```{r}
+#Extract hyperparameters for prior distributions
+
+priors <- prior_summary(attrition_logistic_model_priors)
+priors$prior$adjusted_scale
+```
+
+With our priors, we can write out our complete model:
+
+\begin{array}{rll}
+Y_i | β_{0c},β_1,β_2,... β_{12}, \sigma & \stackrel{ind}{\sim} \text{Bern}(\pi_i) & \text{with } \log\left(\frac{\pi_i}{1 - \pi_i}\right) = β_{0c}+β_1X_{i1+}β_2X_{i2}+...+β_{11}X_{i11} \\
+
+
+\beta_{0c} & \sim N(-.72, .36^2) & \\
+\beta_1    & \sim N(0,  0.27^2) & \\
+\beta_2    & \sim N(0, 2.29^2) & \\
+\beta_3    & \sim N(0, 5.1^2) & \\
+\beta_4    & \sim N(0, 3.51^2) & \\
+\beta_5    & \sim N(0, 2.27^2) & \\
+\beta_6    & \sim N(0,  2.93^2) & \\
+\beta_7    & \sim N(0,  1.94^2) & \\
+\beta_8    & \sim N(0,  3.54^2) & \\
+\beta_9    & \sim N(0,  5.55^2) & \\
+\beta_{10}    & \sim N(0,  1.0^2) & \\
+\beta_{11}    & \sim N(0,  0.69^2) & \\
+\end{array}
+
+
+## Simulate the Posterior
+
+Next, we will update our prior understanding of the relationships between attrition and our predictors using data to reach our posterior.
+
+We can use the `update()` function to set our model's `prior_PD` to `FALSE`, in effect simulating our posterior model using MCMC techniques with the same model features as the prior model `attrition_logistic_model_priors`.
+
+```{r}
+#Simulate posterior model
+
+attrition_logistic_model <- update(attrition_logistic_model_priors, prior_PD = FALSE)
+```
+
+## Check Simulation Stability
+
+Since MCMC simulations only approximate the posterior, and we cannot compare our simulation results to the “true” posterior, it is crucial to check up on our simulations before continuing with our model to make sure the chains are stable. We do this by running some diagnostic tests.
+
+To see if there is consistency across the four chains we simulated, we can use `mcmc_dens_overlay`. It is okay and expected that the chains take different paths, but they should have similar features and produce similar posterior approximations. 
+
+Because chains for each variable produce similar posterior approximations, we can say that our simulation is both stable and has enough iterations. Running more iterations would not likely construct much different or improved posterior approximations.
+
+```{r}
+#Plot density estimates for each Markov chain
+
+mcmc_dens_overlay(attrition_logistic_model)
+```
+
+
+With a stable simulation, the trace plots produced by `mcmc_trace()` should essentially look like white noise, without resembling anything or hinting at any trends. None of the trace plots have any discernible trends or outliers, so we can say it is stable. With this, we can proceed to interpret the model output.
+
+```{r}
+#Display time series plots of the Markov chains
+
+mcmc_trace(attrition_logistic_model)
+```
+
+\newpage
+
+# **Logistic Regression--Interpreting the Model**
+
+I will use the posterior `tidy()` summary to find the posterior medians and 80% credible intervals for the regression coefficients. By performing a simple calculation, we can transform the log(odds) estimate to odds by calculating *e* to the power of the estimate. In the first row, I will illustrate the simple transformation. This transformation will allow us to describe how the odds of attrition change based on the value of the predictor variable while controlling for the other predictors. I will pick out a couple of coefficients and intepret them in the table below, but all coefficients can be interpreted similarly. 
+
+
+```{r}
+#Show model coefficients for interpretation
+
+tidy(attrition_logistic_model, conf.int = TRUE, conf.level = 0.8)
+```
+
+
+```{r, echo = FALSE}
+#Set up content for interpretation table
+
+interpretation_info <- tribble(
+  ~ variable, ~ coefficient, ~ odds, ~ interpretation,
+  "`Age`", "e^(-0.059) = 0.943", "(e^(-0.072), e^(-0.046)) = (0.931,0.955)", 
+  "Each additional year the average employee has lived, the odds of attrition **decrease by about 5.7%**, or somewhere between 4.5% and 6.9%, for  
+  the average employee",
+  
+  "`JobInvolvement`", "0.577", "(0.501,0.662)",
+  "Each additional rating in job involvement the odds of attrition **decrease by about 42%**, or somewhere between 33% and 50%, for the average 
+  employee",
+  
+  "`TrainingTimesLastYear`", "0.894", "(0.82,0.97)",
+  "Each additional training they received the year prior the odds of attrition **decrease by about 11%**, or somewhere between 3% and 18%, for the 
+  average employee",
+  
+  "`WorkLifeBalance`","0.772", "(0.67,0.889)",
+  "Each additional rating in work/life balance the odds of attrition **decrease by about 23%**, or somewhere between 11% and 33%, for the average 
+  employee",
+  
+  "`OverTimeYes`", "5.07", "(4.1, 6.28)",
+  "For employees that works overtime, the odds of attrition **increase by about 5 times**, or somewhere between 4.1 and 6.3 times, for the average 
+  employee"
+)
+```
+
+```{r, echo = FALSE}
+# Create interpretation table
+
+kable(
+  interpretation_info,
+  format = "html",
+  col.names = c("Variable", "Posterior Median Coefficient Transofrmation", "80% Confidence Interval Transformation", "Interpretation")) %>%
+  kable_styling(bootstrap_options = c("hover"))
+```
+
+These interpretations could give HR an idea of what variables have the most substantial influence over the odds of attrition. While some of the interpretations may seem obvious *(i.e., greater job work/life balance leads to decreased odds of attrition)*, the magnitude of these paramters' impact on the attrition odds can convey what HR might focus on for minimizing attrition overall. 
+
+\newpage
+
+
+
+# **LASSO Logistic Regression--Building the Model**
+
+I will go through the steps to build the LASSO logistic model much more briefly. This model is almost identical to the previous model, so for the most part, the steps and specifications coincide with what we have done previously. 
+
+## Specify the Data Model
+
+The categorical response variable $Y_i$ does not change from the previous model, so we will use the Bernoulli probability model again.
+
+## Specify the Priors
+
+The centered intercept $β_{0c}$ remains the same, and as I will show below, so do the other prior hyperparameters. Everything stays the same except the prior modeling. Instead of setting the priors to a normal distribution as we did for the regular logistic regression, we will set them to a laplace distribution for a LASSO approach. We use a LASSO approach to the logistic regression model if we believe we have variables that might be useless for the model, so we use laplace priors in place of the normal priors to encourage stricter variable selection. The laplace distribution is also referred as a double exponential distribution. Both the normal and the laplace distribution are symmetrical and unimodal. Whereas a normal distribution is known for its bell curve shape, the laplace distribution is known for its symmetric distribution with long, moderate tails and a sharp peak. The shape of the laplace distribution provides a stronger bias which brings the variable coefficients closer to 0. A comparison between the two distributions can be seen below.
+
+![image from John D. Cook at https://www.johndcook.com/blog/2019/02/05/normal-approximation-to-laplace-distribution/](normal_laplace.png)
+
+
+```{r}
+#Simulate prior model
+
+attrition_LASSO_model_priors <- stan_glm(
+   Attrition ~ .,
+   prior_intercept = normal(-1.66, .8),
+   prior = lasso(df = 1, location = 0, scale = NULL, autoscale = TRUE),
+   data = Emp_Attrition,
+   family = binomial(),
+   prior_PD = TRUE,
+   chains = 4, iter = 5000*2, seed = 84735, refresh = 0)
+```
+
+Again, we will use `prior_summary()` to find the adjusted prior parameters from the simulations. These match up with the priors from the regular logistic regression, meaning our complete model essentially looks identical.
+
+```{r}
+#Extract hyperparameters for prior distributions
+
+priors <- prior_summary(attrition_LASSO_model_priors)
+priors$prior$adjusted_scale
+```
+
+## Simulate the Posterior
+
+We will set the `prior_PD` to `FALSE` to simulate the posterior model.
+
+```{r}
+#Simulate posterior model
+
+attrition_LASSO_model <- update(attrition_LASSO_model_priors, prior_PD = FALSE)
+```
+
+## Check Simulation Stability
+
+Again, we will check for simulation stability for this model since we used MCMC techniques to construct the model. Both of these plots show stability similar to the regular logistic regression simulations. We can proceed to interpret the model output.
+
+```{r}
+#Plot density estimates for each Markov chain
+
+mcmc_dens_overlay(attrition_LASSO_model)
+```
+
+```{r}
+#Display time series plots of the Markov chains
+
+mcmc_trace(attrition_LASSO_model)
+```
+
+
+# **LASSO Logistic Regression--Interpreting the Model**
+
+Now that we have simulated the posterior model through the same steps as the logistic regression model, one might question where the differences lie. The answer is in the coefficients, which have shifted closer to 0. This change can be seen in the `tidy()` summary that shows us the posterior medians and 80% confidence intervals of the LASSO logistic regression coefficients. In my interpretation in the table below, I transformed the coefficients in the same manner as the regular logistic regression coefficients.
+
+```{r}
+#Show model coefficients for interpretation
+
+tidy(attrition_LASSO_model, conf.int = TRUE, conf.level = 0.8)
+```
+
+```{r, echo = FALSE}
+#Set up content for interpretation table
+
+LASSO_interpretation_info <- tribble(
+  ~ variable, ~ coefficient, ~ odds, ~ interpretation,
+  "`Age`", "0.946", "(0.933,0.958)", 
+  "Each additional year lived, the odds of attrition **decrease by about 5.4%**, or somewhere between 4.2% and 6.7%, for the average employee",
+  
+  "`JobInvolvement`", "0.595", "(0.518,0.687)",
+  "Each additional rating in job involvement, the odds of attrition **decrease by about 40.5%**, or somewhere between 31.3 and 48.2%, for the 
+  average employee",
+  
+  "`TrainingTimesLastYear`", "0.905", "(0.834,0.98)",
+  "Each additional training they received the year prior, the odds of attrition **decrease by about 10.5%**, or somewhere between 2% and 17%, for 
+  the everage employeee",
+  
+  "`WorkLifeBalance`","0.772", "(0.67,0.889)",
+  "Each additional rating in work/life balance, the odds of attrition **decrease by about 23%**, or somewhere between 11% and 33%, for the average 
+  employee",
+  
+  "`OverTimeYes`", "4.78", "(3.86, 5.93)",
+  "For employees that works overtime, the odds of attrition **increase by about 4.8 times**, or somewhere between 3.9 and 5.9 times, for the 
+  average employee"
+)
+```
+
+```{r print_inhosp, echo = FALSE}
+# Create interpretation table
+
+kable(
+  LASSO_interpretation_info,
+  format = "html",
+  col.names = c("Variable", "Posterior Median Coefficient Transofrmation", "80% Confidence Interval Transformation", "Interpretation")) %>%
+  kable_styling(bootstrap_options = c("hover"))
+```
+
+To better illustrate the shrinkage that occurred, I can use `mcmc_areas()` to plot the posterior distributions of the regression coefficients for both the LASSO logistic regression model and the regular logistic regression model. Although minimal, the regression coefficients for the LASSO logistic regression model have shifted closer to 0. If more of the variables were modeled, it's possible that some of the less relevant variables would have shrunk to 0 more drastically. If any regression coefficients had shrunk more drastically to 0, I would consider re-building the model without that variable.
+
+```{r, message=FALSE, fig.height=10, fig.width=8}
+#Plot posterior interval estimates from MCMC draws
+
+logistic_plot <- mcmc_areas(attrition_logistic_model, pars = c("Age", "EnvironmentSatisfaction", "GenderMale", "JobInvolvement", "JobSatisfaction",   "StockOptionLevel", "TrainingTimesLastYear", "WorkLifeBalance", "OverTimeYes", "NumCompaniesWorked", "YearsInCurrentRole")) + 
+  xlim(c(-1.5,3)) +
+  labs(title = "Logistic Regression Posterior Distributions",
+  subtitle = "with medians and 80% intervals")
+
+LASSO_plot <- mcmc_areas(attrition_LASSO_model, pars = c("Age", "EnvironmentSatisfaction", "GenderMale", "JobInvolvement", "JobSatisfaction",        "StockOptionLevel", "TrainingTimesLastYear", "WorkLifeBalance", "OverTimeYes", "NumCompaniesWorked", "YearsInCurrentRole")) + 
+  xlim(c(-1.5,3)) +
+  labs(title = "LASSO Logostic Regression Posterior Distributions",
+  subtitle = "with medians and 80% intervals")
+
+grid.arrange(logistic_plot, LASSO_plot, nrow = 2)
+```
+
+
+\newpage
+
+# **Naive Bayes--Building the Model**
+
+The Naive Bayes classification utilizes Bayes' Theorem, which uses both the prior information and the data to reach the posterior classification probability. 
+$$\text{posterior probability} = \frac{\text{likelihood * prior}}{\text{marginal likelihood}}$$
+
+
+
+Connecting this to employee attrition problem at hand, the probability that employee i will leave the company given the employees characteristics $P(Y_i = 1 | X_1 = x_1, X_2 = x_2...X_{11} = x_{11})$ is equal to the likelihood that the employee will leave the company given their characteristics $L(Y_i = 1 | X_1 = x_1, X_2 = x_2...X_{11} = x_{11})$ multiplied by the prior probability that an employee will leave the company $P(Y = 1)$ (without knowing any of the employee's characteristics), divided by the probability that an employee has those characteristics $P(x_1, X_2 = x_2...X_{11})$. 
+
+*By employee characteristics I am referring to the variable values for a given employee.*
+
+
+**The likelihood of this equation:**
+
+$$L(Y_i = 1 |X_1 =x_1, X_2 = x_2...X_{11} = x_{11}) =\frac{\text{Number of employees who have the specific characteristics}}{\text{Number of employees who left company}}$$
+
+
+**The prior of this equation:**
+
+$$P(Y = 1) = \frac{\text{Number of employees who left company}}{\text{Total number of employees}}$$
+
+**The marginal likelihood of this equation (using the Law of Total Probability:**
+
+
+$$P(X_1 =x_1, X_2 = x_2...X_{11}=x_{11}) =$$ 
+$$P(Y=1) * P(X_1 =x_1, X_2 = x_2...X_{11} = x_{11} | Y_i = 1) + P(Y=0) * P(X_1 = x_1, X_2 = x_2...X_{11} = x_{11} | Y_i = 0)$$
+
+Now that I've described some of the math behind Naive Bayes, we can move on to building the model. When using Naive Bayes, we do not need to provide prior models or Markov chains; instead, this model calculates prior probabilities directly from the data. Thanks to this, it does not require MCMC simulations, making it more computationally efficient than logistic regression. This makes the process of building the model quite simple. We will use `naiveBayes()` to model the posterior.
+
+```{r}
+#Build posterior model
+
+attrition_naive_model <- naiveBayes(Attrition ~ ., data = Emp_Attrition)
+```
+
+# **Naive Bayes--Interpreting the Model**
+
+While computationally efficient, Naive Bayes has some downsides---one that I have mentioned is that it does not support any interpretation of the predictor variables' relationships to the predicted variable. This drawback is okay only if we do not care about these relationships and require only the predicted classifications, which will depend heavily on the situation. In this case, the interpretation would be beneficial for HR. While knowing which employees are more likely to quit would help with direct intervention, understanding how these variables affect the employees would allow HR to consider implementing more wide-sweeping changes to prevent overall attrition.
+
+\newpage
+
+# **Evaluating the Models**
+
+
+Now that we have built and interpreted the models, it is time to evaluate them. Just because a model is correctly built does not mean it produces accurate predictions or should be used. It is essential to determine how wrong the models are and if the predictive accuracy is high enough to be helpful. 
+
+
+## How Wrong are the Models?
+
+We will perform a posterior predictive check to see if the simulated data from our posterior logistic regression models are similar to the original data in order to confirm that the assumptions behind our Bayesian logistic regression models are reasonable. From each of 100 posterior simulated datasets, we record the proportion of outcomes Y that are 1, *(i.e., the proportion of employees that leave the company)*, using `pp_check()`. 
+
+### Logistic Regression
+
+Using regular logistic regression, most of our posterior simulated datasets saw attrition for about 16% of employees, equal to the observed proportion of attrition in the original data. However, some saw attrition from as few as 12.5% of the employees or as many as 20.5%. 
+
+```{r}
+#Create histogram of 100 simulated attrition rates
+
+set.seed(84735)
+
+proportion_attrition <- function(x){mean(x == 1)}
+pp_check(attrition_logistic_model, nreps = 100, 
+        plotfun = "stat", stat = "proportion_attrition") + 
+        xlab("probability of attrition")
+```
+
+
+### LASSO Logistic Regression
+
+Using logistic regression with LASSO regularisation, most of our posterior simulated datasets saw attrition for about 16% of employees (or more accurately, a little under 16% and a little over 16%), similar to the observed proportion of attrition in the original data. Some saw attrition in the same range as the simulations in the previous model (12.5% to 20.5%). This looks very similar to the regular logistic regression posterior model.
+
+```{r}
+#Create histogram of 100 simulated attrition rates
+
+set.seed(84735)
+
+proportion_attrition <- function(x){mean(x == 1)}
+pp_check(attrition_LASSO_model, nreps = 100,
+        plotfun = "stat", stat = "proportion_attrition") +
+        xlab("probability of attrition")
+```
+
+Based on these plots, the simulated data for both is similar to the original data, so both models could be helpful. Since the Naive Bayes does not have simulated data, checking if the model is wrong is unnecessary. 
+
+
+## How Accurate are the Posterior Predictions?
+
+
+To determine the accuracy of classification models, we can use sensitivity, specificity, and overall accuracy:
+
+- The **sensitivity** of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified would leave *(i.e., the proportion of $Y = 1$ outcomes that we correctly predicted to be 1)*. 
+
+- The **specificity** of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified would not leave *(i.e., the proportion of $Y = 0$ outcomes that we correctly predicted to be 0)*. 
+ 
+- The **overall accuracy** of our posterior classifications reflects the overall proportion of employees we correctly classified.
+
+We can use `classification_summary()` to calculate these posterior predictive outcomes for both the logistic regression and the LASSO logistic regression model. In this case, we care more about accurately predicting employees who will leave the company than employees who will not. If the fictitious company can accurately predict the employees likely to leave, HR can step in before it's too late and try to work with the employee to keep them at the company. 
+
+
+In short, we want to maximize the sensitivity of the model while keeping the overall accuracy from dropping too low. To do this, we can alter the cut-off for the classifications of the logistic regression and LASSO logistic regression models. 
+
+
+The cut-off determines the following classification rule: **If more than the cut-off our predictions predict the employee will leave the company , classify the employee as someone who will leave the company**
+
+
+If we set the cut-off to the natural 0.5, then if 50% of our posterior predictions call for attrition, we’ll classify the employee as someone who will leave the company. The cut-off can be used to change the sensitivity and specificity of the predictions, lowering the cut-off increases sensitivity while decreasing specificity, and raising the cut-off has the opposite effect. Because of this, the cut-off should be altered on a case by case basis. Since we want to maximize the sensitivity, we will lower the cut-off to .2. If even 20% of our posterior predictions call for attrition, we'll classify that employee as someone who will leave the company, allowing HR to target them. 
+
+
+### Logistic Regression
+
+Out of the 237 employees who quit, the logistic regression posterior predicted 159 of them accurately, accounting for a sensitivity of 67.1%.
+
+Out of the 1,470 total employees, the logistic regression posterior predicted 1,144 of them accurately, accounting for an overall accuracy of 77.8%.
+
+```{r}
+#Calculate posterior model accuracy 
+
+set.seed(84735)
+
+classification_summary(model = attrition_logistic_model, data = Emp_Attrition, cutoff = 0.2)
+```
+
+
+### LASSO Logistic Regression
+
+Out of the 237 employees who quit, the LASSO logistic regression posterior predicted 159 of them, accounting for a sensitivity of 67.1%.
+
+Out of the 1,470 total employees, the LASSO logistic regression posterior predicted 1,144 of them accurately, accounting for an overall accuracy of 77.8%.
+
+```{r}
+#Calculate posterior model accuracy
+
+set.seed(84735)
+
+classification_summary(model = attrition_LASSO_model, data = Emp_Attrition, cutoff = 0.2)
+```
+
+
+### Naive Bayes
+
+
+Like the logistic regression and the LASSO logistic regression models, we can evaluate the Naive Bayes model by its specificity, sensitivity, and accuracy using `naive_classification_summary()`. 
+
+The naive Bayes model classifies the employees in a different manner, where the logistic regression follows the cut-off rule, this classification follows a simple rule: **classify the employee as whichever attrition value has the highest posterior probability** 
+
+
+Out of the 237 employees who quit, the Naive Bayes posterior predicted 60 of them, accounting for a sensitivity of 25.3%.
+
+Out of the 1,470 total employees, the Naive Bayes posterior predicted 1,272 of them accurately, accounting for an overall accuracy of 86.5%.
+
+```{r}
+#Calculate posterior model accuracy
+
+set.seed(84735)
+
+naive_classification_summary(model = attrition_naive_model, data = Emp_Attrition, y = "Attrition")
+```
+
+# **Conclusion**
+
+### Model Usefulness
+
+Based on the evaluation, I would find the logistic regression and the LASSO logistic regression models most beneficial. The differences in these models were, unfortunately, pretty minimal. The prediction accuracy for the logistic regression model and the LASSO logistic regression model were identical. The shrinkage that the LASSO technique incurred was too minimal to affect the posterior classification predictions, possibly because all of the predictors were useful and did not shrink much closer to 0. While these models misclassified 78 of the employees who left the company, they still accurately classified most of the employees who left. This accuracy would provide a good start for HR to target employees and direct their strategies for minimizing attrition.   
+
+In this case, I would not find the Naive Bayes model helpful. The model had poor sensitivity and misclassified most of the employees who left the company, which is our main priority for the model. This poor sensitivity is likely because I could not set a cut-off like I could for the logistic regression models. It is also possible that some of the predictors violated the assumption that all variables are independent, for example, the variables `Age` and `NumCompaniesWorked`. While we can use the Naive Bayes model to predict which employees are more likely to leave, without having model coefficients, we cannot interpret the variable relationships. The lack of interpretation for Naive Bayes is a major drawback in this situation, because it would not give HR a sense of how the employee profile is connected with attrition. The Naive Bayes model would only provide insight that could lead to responsive measures---not preventative measures.
+
+
+
+### Data-Driven Recommendations
+
+We have built the models, interpreted them, and decided on their usefulness. Now it is finally time to put these models to work.
+
+While it would be helpful for HR to target employees to provide them with an incentive to stay with the company, it might be beneficial to work more in the long term. This might mean changing company policies or engaging in new initiatives that would decrease the odds of attrition throughout the company. This tactic would lean more towards preventative than responsive measures. 
+
+
+From the models I built, I could make a few recommendations to HR:
+
+* The models show that working overtime has the most significant impact on attrition odds. HR can delve more into this issue to see if specific roles are understaffed, consider giving overtime employees extra paid time off, or implement a strict no-overtime practice that might benefit the company. 
+
+* Job Involvement also strongly impacted attrition odds, showing that employees who felt less involved had higher odds of leaving the company. HR might consider a new initiative that fosters a more engaging company culture.   
+
+
+We have gone over many steps and much content in the span of this work. **I hope this work has piqued the interest or curiosity of analysts and provided a starting foundation for them to utilize the Bayesian approach for business analytics.**
+
+
+# **Next Steps**
+
+There are many next steps I could take with this analysis, including:
+
+* **Modeling with a larger dataset.** With under 1,500 data observations, the models I built did not have much to work with. I would be interested in simulating similar models on a larger dataset to see if the classification prediction accuracy improves. 
+* **Predicting new data.** It would be interesting to predict new employee data to see how the models perform on data outside the sample. 
+* **Exploring other prior distributions.** I would like to look more into other prior distributions to see how they might affect the parameter coefficients and the model's accuracy.
+* **Comparing Bayesian models to Frequentist models.** Building a frequentist logistic regression model (logistic regression model without the priors) and comparing its accuracy and parameter coefficients to the Bayesian models I've built would be a logical next step if I am trying to encourage the use of Bayesian modeling. 
+
+# **Bibliography**
+
+Cook, John D. “Normal and Laplace Distributions in Differential Privacy.” John D. Cook | Applied Mathematics Consulting, 30 June 2020, https://www.johndcook.com/blog/2019/02/05/normal-approximation-to-laplace-distribution/. 
+
+
+Johnson, Alicia A, et al. “Bayes Rules! an Introduction to Applied Bayesian Modeling.” Bayes Rules! An Introduction to Applied Bayesian Modeling, https://www.bayesrulesbook.com/. 
+
+
+Ottesen, Christopher. “Comparison between Naïve Bayes and Logistic Regression.” DataEspresso, 24 Oct. 2017, https://dataespresso.com/en/2017/10/24/comparison-between-naive-bayes-and-logistic-regression/. 
+
+
+Pavansubhash. “IBM HR Analytics Employee Attrition &amp; Performance.” Kaggle, 31 Mar. 2017, https://www.kaggle.com/pavansubhasht/ibm-hr-analytics-attrition-dataset. 
+
+
+“Prior Distributions for RSTANARM Models.” Rstanarm, http://mc-stan.org/rstanarm/articles/priors.html. 
