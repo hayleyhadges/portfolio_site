@@ -564,7 +564,7 @@ To determine the accuracy of classification models, we can use sensitivity, spec
 
 - The **sensitivity** of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified would leave *(i.e., the proportion of $Y = 1$ outcomes that we correctly predicted to be 1)*. 
 
-- The **specificity** of our posterior classifications reflects the overall proportion of employees who left the company that we correctly classified would not leave *(i.e., the proportion of $Y = 0$ outcomes that we correctly predicted to be 0)*. 
+- The **specificity** of our posterior classifications reflects the overall proportion of employees who had not left the company that we correctly classified would not leave *(i.e., the proportion of $Y = 0$ outcomes that we correctly predicted to be 0)*. 
  
 - The **overall accuracy** of our posterior classifications reflects the overall proportion of employees we correctly classified.
 
